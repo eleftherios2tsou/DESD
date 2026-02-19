@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"c:/Users/lefte/OneDrive -:*)",
+      "Bash(docker ps:*)"
+    ]
+  }
+}

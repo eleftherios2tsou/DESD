@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% block title %}Bristol Food Network — Local Produce Marketplace{% endblock %}
+
+{% block extra_css %}
+    .hero {
+        background: #1a3a2a;
+        border-radius: 10px;
+        padding: 3.5rem 2.5rem;
+        margin-bottom: 2.5rem;
+        color: #fff;
+    }
+
+    .hero h1 {
+        font-size: 2.4rem;
+        margin-bottom: 1rem;
+        line-height: 1.25;
+    }
+
+    .hero h1 span { color: #52b788; }
+
+    .hero p {
+        font-size: 1.05rem;
+        color: rgba(255,255,255,0.8);
+        max-width: 520px;
+        line-height: 1.6;
+        margin-bottom: 1.8rem;
+    }
+
+    .hero-actions { display: flex; gap: 0.75rem; }
+
+    .btn {
+        display: inline-block;
+        padding: 0.65rem 1.5rem;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        font-weight: bold;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .btn-primary {
+        background: #52b788;
+        color: #1a3a2a;
+    }
+
+    .btn-secondary {
+        background: rgba(255,255,255,0.12);
+        color: #fff;
+        border: 1px solid rgba(255,255,255,0.25);
+    }
+
+    .features {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.25rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .feature-card {
+        background: #fff;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
+
+    .feature-icon { font-size: 2rem; margin-bottom: 0.75rem; }
+
+    .feature-card h3 {
+        font-size: 1rem;
+        color: #1a3a2a;
+        margin-bottom: 0.4rem;
+    }
+
+    .feature-card p {
+        font-size: 0.88rem;
+        color: #666;
+        line-height: 1.5;
+    }
+
+    .section-title {
+        font-size: 1.4rem;
+        color: #1a3a2a;
+        margin-bottom: 1rem;
+    }
+
+    .products-placeholder {
+        background: #fff;
+        border-radius: 8px;
+        padding: 3rem;
+        text-align: center;
+        color: #999;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
+
+    .products-placeholder p { font-size: 1rem; }
+{% endblock %}
+
+{% block content %}
+
+<div class="hero">
+    <h1>Fresh from <span>Bristol's</span> Local Farms</h1>
+    <p>Connect directly with local producers within 20 miles of Bristol. Seasonal, fresh, and traceable produce delivered to your door.</p>
+    <div class="hero-actions">
+        <a href="#" class="btn btn-primary">Browse Products</a>
+        <a href="#" class="btn btn-secondary">Register as Producer</a>
+    </div>
+</div>
+
+<div class="features">
+    <div class="feature-card">
+        <div class="feature-icon">🌾</div>
+        <h3>Fresh &amp; Traceable</h3>
+        <p>Every product shows harvest dates, farm origin, and allergen information so you know exactly what you're buying.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">🧑‍🌾</div>
+        <h3>Local Producers</h3>
+        <p>Support Bristol-area farmers and small food producers selling directly to customers, restaurants, and community groups.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">♻️</div>
+        <h3>Sustainable Community</h3>
+        <p>Reducing food miles and strengthening the Bristol local food economy, one order at a time.</p>
+    </div>
+</div>
+
+<h2 class="section-title">Featured Products</h2>
+<div class="products-placeholder">
+    <p>Products will appear here once producers start listing them.</p>
+</div>
+
+{% endblock %}

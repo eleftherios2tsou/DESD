@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Bristol Food Network{% endblock %}</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        /* NAV */
+        nav {
+            background: #1a3a2a;
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 60px;
+        }
+
+        .nav-brand {
+            color: #fff;
+            font-size: 1.15rem;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links a {
+            color: rgba(255,255,255,0.85);
+            text-decoration: none;
+            padding: 0.4rem 0.9rem;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+
+        .nav-links a:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .btn-login {
+            border: 1px solid rgba(255,255,255,0.4);
+        }
+
+        .btn-register {
+            background: #52b788;
+            color: #1a3a2a !important;
+            font-weight: bold;
+        }
+
+        .btn-register:hover {
+            background: #6fcf97 !important;
+        }
+
+        /* MAIN */
+        main {
+            max-width: 960px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        /* FOOTER */
+        footer {
+            background: #1a3a2a;
+            color: rgba(255,255,255,0.65);
+            text-align: center;
+            padding: 1.2rem;
+            margin-top: 4rem;
+            font-size: 0.85rem;
+        }
+
+        {% block extra_css %}{% endblock %}
+    </style>
+</head>
+<body>
+
+<nav>
+    <a href="/" class="nav-brand">Bristol Food Network</a>
+    <div class="nav-links">
+        <a href="#">Browse</a>
+        <a href="#">About</a>
+        <a href="#" class="btn-login">Log In</a>
+        <a href="#" class="btn-register">Register</a>
+    </div>
+</nav>
+
+<main>
+    {% block content %}{% endblock %}
+</main>
+
+<footer>
+    <p>&copy; 2026 Bristol Regional Food Network &mdash; Connecting local producers with Bristol communities</p>
+</footer>
+
+</body>
+</html>
