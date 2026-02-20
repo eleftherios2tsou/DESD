@@ -6,4 +6,3 @@ media/
 db.sqlite3
 venv/
 .vscode/
-.claude
