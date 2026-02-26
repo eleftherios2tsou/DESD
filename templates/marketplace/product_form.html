@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ action }} Product — Bristol Food Network{% endblock %}
+
+{% block extra_css %}
+.form-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 2rem 2.5rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.form-card h1 {
+    font-size: 1.5rem;
+    color: #1a3a2a;
+    margin-bottom: 0.3rem;
+}
+
+.form-card .back-link {
+    display: inline-block;
+    color: #52b788;
+    text-decoration: none;
+    font-size: 0.88rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-card .back-link:hover { text-decoration: underline; }
+
+.form-section-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #999;
+    margin: 1.8rem 0 0.8rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid #eee;
+}
+
+.form-card form p {
+    margin-bottom: 1rem;
+}
+
+.form-card form label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #444;
+    margin-bottom: 0.3rem;
+}
+
+.form-card form input[type="text"],
+.form-card form input[type="number"],
+.form-card form input[type="date"],
+.form-card form select,
+.form-card form textarea {
+    width: 100%;
+    padding: 0.65rem 0.9rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.92rem;
+    color: #333;
+    background: #fafafa;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    font-family: inherit;
+}
+
+.form-card form input:focus,
+.form-card form select:focus,
+.form-card form textarea:focus {
+    border-color: #52b788;
+    box-shadow: 0 0 0 3px rgba(82,183,136,0.12);
+    background: #fff;
+}
+
+.form-card form input[type="checkbox"] {
+    width: auto;
+    margin-right: 0.5rem;
+    accent-color: #52b788;
+}
+
+.form-card .helptext {
+    font-size: 0.78rem;
+    color: #999;
+    margin-top: 0.25rem;
+}
+
+.form-card ul.errorlist {
+    list-style: none;
+    padding: 0;
+    margin: 0.3rem 0 0;
+}
+
+.form-card ul.errorlist li {
+    font-size: 0.82rem;
+    color: #b91c1c;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #eee;
+}
+
+.btn {
+    display: inline-block;
+    padding: 0.65rem 1.5rem;
+    border-radius: 8px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: filter 0.15s;
+}
+
+.btn:hover { filter: brightness(1.07); }
+.btn-primary { background: #52b788; color: #1a3a2a; }
+.btn-secondary { background: #e8f5ee; color: #2d6a4f; }
+{% endblock %}
+
+{% block content %}
+<div class="form-card">
+    <a href="{% url 'dashboard' %}" class="back-link">← Back to dashboard</a>
+    <h1>{{ action }} Product</h1>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div style="background:#fee2e2;border-left:3px solid #e05252;border-radius:8px;padding:0.8rem 1rem;color:#b91c1c;margin-bottom:1rem;">
+                {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+            </div>
+        {% endif %}
+
+        <p class="form-section-title">Basic Info</p>
+        {{ form.name.label_tag }} {{ form.name }} {{ form.name.errors }}
+        {{ form.category.label_tag }} {{ form.category }} {{ form.category.errors }}
+        {{ form.description.label_tag }} {{ form.description }} {{ form.description.errors }}
+        {{ form.price.label_tag }} {{ form.price }} {{ form.price.errors }}
+        {{ form.stock.label_tag }} {{ form.stock }} {{ form.stock.errors }}
+
+        <p class="form-section-title">Origin & Quality</p>
+        {{ form.farm_origin.label_tag }} {{ form.farm_origin }} {{ form.farm_origin.errors }}
+        {{ form.is_organic.label_tag }} {{ form.is_organic }} {{ form.is_organic.errors }}
+        {{ form.allergens.label_tag }} {{ form.allergens }}
+        <p class="helptext">{{ form.allergens.help_text }}</p>
+        {{ form.allergens.errors }}
+
+        <p class="form-section-title">Dates & Availability</p>
+        {{ form.harvest_date.label_tag }} {{ form.harvest_date }} {{ form.harvest_date.errors }}
+        {{ form.best_before.label_tag }} {{ form.best_before }} {{ form.best_before.errors }}
+        {{ form.is_seasonal.label_tag }} {{ form.is_seasonal }} {{ form.is_seasonal.errors }}
+        {{ form.seasonal_months.label_tag }} {{ form.seasonal_months }}
+        <p class="helptext">{{ form.seasonal_months.help_text }}</p>
+        {{ form.seasonal_months.errors }}
+        {{ form.lead_time_hours.label_tag }} {{ form.lead_time_hours }}
+        <p class="helptext">{{ form.lead_time_hours.help_text }}</p>
+        {{ form.lead_time_hours.errors }}
+
+        <p class="form-section-title">Listing Status</p>
+        {{ form.is_active.label_tag }} {{ form.is_active }} {{ form.is_active.errors }}
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">{{ action }} Product</button>
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

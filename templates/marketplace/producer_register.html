@@ -4,20 +4,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register — Bristol Food Network</title>
+    <title>Producer Registration — Bristol Food Network</title>
     <link rel="stylesheet" href="{% static 'css/register.css' %}">
 </head>
 <body>
-    <div class="register-wrapper">
+    <div class="register-wrapper" style="max-width: 540px;">
 
         <div class="brand">
-            <div class="brand-icon">🌿</div>
+            <div class="brand-icon">🌾</div>
             <h1>Bristol Food Network</h1>
         </div>
 
         <div class="register-card">
-            <h2>Create account</h2>
-            <p class="subtitle">Join as a customer and start shopping local</p>
+            <h2>Join as a Producer</h2>
+            <p class="subtitle">Register your farm or food business</p>
 
             {% if form.non_field_errors %}
                 {% for error in form.non_field_errors %}
@@ -28,12 +28,12 @@
             <form method="post" novalidate>
                 {% csrf_token %}
                 {{ form.as_p }}
-                <button type="submit">Create Account</button>
+                <button type="submit">Register as Producer</button>
             </form>
         </div>
 
         <p class="register-footer">
-            Are you a producer? <a href="{% url 'register_producer' %}">Register your farm</a><br>
+            Registering as a customer instead? <a href="{% url 'register' %}">Customer registration</a><br>
             Already have an account? <a href="{% url 'login' %}">Log in</a>
         </p>
 

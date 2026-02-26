@@ -1,15 +1,64 @@
 from django.contrib.auth.forms import UserCreationForm
-from .models import CustomUser
 from django import forms
-LIMITED_CHOICES = (
-    ('producer', 'Producer'),
-    ('customer', 'Customer'),
-)
+from .models import CustomUser, Product
+
+
 class RegistrationForm(UserCreationForm):
-    
-    role = forms.ChoiceField(choices=LIMITED_CHOICES)
+    email = forms.EmailField(required=True)
+
     class Meta:
         model = CustomUser
-        fields = ['username', 'email', 'role' , 'password1', 'password2']
-        
+        fields = ['username', 'email', 'password1', 'password2']
 
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if CustomUser.objects.filter(email=email).exists():
+            raise forms.ValidationError('An account with this email already exists.')
+        return email
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.role = 'customer'
+        if commit:
+            user.save()
+        return user
+
+
+class ProducerRegistrationForm(UserCreationForm):
+    email = forms.EmailField(required=True)
+    business_name = forms.CharField(max_length=200, help_text='Your farm or business name')
+    address = forms.CharField(widget=forms.Textarea(attrs={'rows': 3}), help_text='Full business address')
+    postcode = forms.CharField(max_length=10)
+    description = forms.CharField(
+        widget=forms.Textarea(attrs={'rows': 3}),
+        required=False,
+        help_text='Brief description of your produce (optional)',
+    )
+
+    class Meta:
+        model = CustomUser
+        fields = ['username', 'email', 'password1', 'password2']
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if CustomUser.objects.filter(email=email).exists():
+            raise forms.ValidationError('An account with this email already exists.')
+        return email
+
+
+class ProductForm(forms.ModelForm):
+    class Meta:
+        model = Product
+        fields = [
+            'name', 'category', 'description', 'price', 'stock',
+            'allergens', 'is_organic', 'harvest_date', 'best_before',
+            'farm_origin', 'is_seasonal', 'seasonal_months',
+            'lead_time_hours', 'is_active',
+        ]
+        widgets = {
+            'harvest_date': forms.DateInput(attrs={'type': 'date'}),
+            'best_before': forms.DateInput(attrs={'type': 'date'}),
+            'description': forms.Textarea(attrs={'rows': 4}),
+            'allergens': forms.Textarea(attrs={'rows': 2}),
+            'address': forms.Textarea(attrs={'rows': 3}),
+        }

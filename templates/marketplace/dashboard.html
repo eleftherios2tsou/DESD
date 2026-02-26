@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+{% block title %}Producer Dashboard — Bristol Food Network{% endblock %}
+
+{% block extra_css %}
+.dashboard-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.dashboard-header h1 {
+    font-size: 1.6rem;
+    color: #1a3a2a;
+}
+
+.btn {
+    display: inline-block;
+    padding: 0.55rem 1.2rem;
+    border-radius: 7px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: filter 0.15s, transform 0.15s;
+}
+
+.btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+
+.btn-primary { background: #52b788; color: #1a3a2a; }
+.btn-secondary { background: #e8f5ee; color: #2d6a4f; }
+.btn-danger { background: #fee2e2; color: #b91c1c; }
+
+.product-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.product-table th {
+    background: #1a3a2a;
+    color: rgba(255,255,255,0.85);
+    padding: 0.8rem 1rem;
+    text-align: left;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+.product-table td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.9rem;
+    color: #333;
+    vertical-align: middle;
+}
+
+.product-table tr:last-child td { border-bottom: none; }
+.product-table tr:hover td { background: #f8fdf9; }
+
+.badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-active { background: #d1fae5; color: #065f46; }
+.badge-inactive { background: #fee2e2; color: #b91c1c; }
+.badge-organic { background: #dcfce7; color: #166534; }
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #888;
+}
+
+.empty-state p { margin-bottom: 1rem; }
+
+.alert {
+    padding: 0.85rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+}
+
+.alert-success {
+    background: #d1fae5;
+    border-left: 3px solid #52b788;
+    color: #065f46;
+}
+
+.alert-error {
+    background: #fee2e2;
+    border-left: 3px solid #e05252;
+    color: #b91c1c;
+}
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <div>
+        <h1>My Products</h1>
+        <p style="color:#666; font-size:0.9rem; margin-top:0.25rem;">
+            {{ request.user.producer_profile.business_name }}
+        </p>
+    </div>
+    <a href="{% url 'product_create' %}" class="btn btn-primary">+ Add Product</a>
+</div>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert {% if message.tags == 'error' %}alert-error{% else %}alert-success{% endif %}">
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
+
+{% if products %}
+<table class="product-table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Stock</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for product in products %}
+        <tr>
+            <td>
+                <strong>{{ product.name }}</strong>
+                {% if product.is_organic %}
+                    <span class="badge badge-organic">Organic</span>
+                {% endif %}
+            </td>
+            <td>{{ product.category.name|default:"—" }}</td>
+            <td>£{{ product.price }}</td>
+            <td>{{ product.stock }}</td>
+            <td>
+                {% if product.is_active %}
+                    <span class="badge badge-active">Active</span>
+                {% else %}
+                    <span class="badge badge-inactive">Inactive</span>
+                {% endif %}
+            </td>
+            <td style="white-space:nowrap;">
+                <a href="{% url 'product_edit' product.pk %}" class="btn btn-secondary" style="margin-right:0.4rem;">Edit</a>
+                <a href="{% url 'product_delete' product.pk %}" class="btn btn-danger">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="empty-state">
+    <p>You haven't listed any products yet.</p>
+    <a href="{% url 'product_create' %}" class="btn btn-primary">Add your first product</a>
+</div>
+{% endif %}
+{% endblock %}
