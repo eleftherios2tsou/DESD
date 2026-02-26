@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Product — Bristol Food Network{% endblock %}
+
+{% block extra_css %}
+.confirm-card {
+    max-width: 480px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 12px;
+    padding: 2rem 2.5rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    text-align: center;
+}
+
+.confirm-card .icon { font-size: 2.5rem; margin-bottom: 1rem; }
+.confirm-card h1 { font-size: 1.4rem; color: #1a3a2a; margin-bottom: 0.5rem; }
+.confirm-card p { color: #555; font-size: 0.95rem; margin-bottom: 1.8rem; }
+.confirm-card strong { color: #1a3a2a; }
+
+.btn-row { display: flex; gap: 1rem; justify-content: center; }
+
+.btn {
+    padding: 0.65rem 1.5rem;
+    border-radius: 8px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: filter 0.15s;
+}
+
+.btn:hover { filter: brightness(1.07); }
+.btn-danger { background: #fee2e2; color: #b91c1c; }
+.btn-secondary { background: #e8f5ee; color: #2d6a4f; }
+{% endblock %}
+
+{% block content %}
+<div class="confirm-card">
+    <div class="icon">🗑️</div>
+    <h1>Delete Product</h1>
+    <p>Are you sure you want to delete <strong>"{{ product.name }}"</strong>?<br>
+    This action cannot be undone.</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="btn-row">
+            <button type="submit" class="btn btn-danger">Yes, delete</button>
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

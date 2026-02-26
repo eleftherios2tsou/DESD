@@ -4,22 +4,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>Log In — Bristol Food Network</title>
     <link rel="stylesheet" href="{% static 'css/login.css' %}">
 </head>
 <body>
-    <div class="container">
-        <form method="post">
-        <h2>Login</h2>
+    <div class="login-wrapper">
+
+        <div class="brand">
+            <div class="brand-icon">🌿</div>
+            <h1>Bristol Food Network</h1>
+        </div>
+
+        <div class="login-card">
+            <h2>Welcome back</h2>
+            <p class="subtitle">Sign in to your account to continue</p>
+
             {% if messages %}
                 {% for message in messages %}
                     <div class="message-success">{{ message }}</div>
                 {% endfor %}
             {% endif %}
-            {% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit">Login</button>
-        </form>
+
+            {% if form.non_field_errors %}
+                {% for error in form.non_field_errors %}
+                    <div class="message-error">{{ error }}</div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label for="{{ form.username.id_for_label }}">Username</label>
+                    {{ form.username }}
+                    {% for error in form.username.errors %}
+                        <div class="message-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.password.id_for_label }}">Password</label>
+                    {{ form.password }}
+                    {% for error in form.password.errors %}
+                        <div class="message-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <button type="submit">Log In</button>
+            </form>
+        </div>
+
+        <p class="login-footer">
+            Don't have an account?
+            <a href="{% url 'register' %}">Register as customer</a> &nbsp;|&nbsp;
+            <a href="{% url 'register_producer' %}">Register as producer</a>
+        </p>
+
     </div>
 </body>
 </html>
