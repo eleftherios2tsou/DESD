@@ -1,9 +1,11 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Bristol Food Network{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -70,6 +72,26 @@
             padding: 0 2rem;
         }
 
+        /* flash message styles - used across pages */
+        .message-success, .message-error {
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .message-success {
+            background: #d1fae5;
+            border-left: 3px solid #52b788;
+            color: #065f46;
+        }
+
+        .message-error {
+            background: #fee2e2;
+            border-left: 3px solid #e05252;
+            color: #b91c1c;
+        }
+
         /* FOOTER */
         footer {
             background: #1a3a2a;
@@ -85,6 +107,7 @@
 </head>
 <body>
 
+<!-- navbar - links change depending on if user is logged in / their role -->
 <nav>
     <a href="/" class="nav-brand">Bristol Food Network</a>
     <div class="nav-links">
