@@ -1,6 +1,7 @@
 from django.contrib.auth.forms import UserCreationForm
 from django import forms
 from .models import CustomUser, Product
+from datetime import date, timedelta
 
 
 class RegistrationForm(UserCreationForm):
@@ -62,3 +63,17 @@ class ProductForm(forms.ModelForm):
             'allergens': forms.Textarea(attrs={'rows': 2}),
             'address': forms.Textarea(attrs={'rows': 3}),
         }
+class CheckoutForm(forms.Form):
+    full_name = forms.CharField(max_length=200)
+    email = forms.EmailField()
+    postcode = forms.CharField(max_length=10)
+    delivery_address = forms.CharField(widget=forms.Textarea(attrs={'rows': 3}))
+    delivery_date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+
+    def clean_delivery_date(self):
+        delivery_date = self.cleaned_data.get('delivery_date')
+        min_date = date.today() + timedelta(hours=48)
+        if delivery_date < min_date:
+            raise forms.ValidationError('Delivery date must be at least 48 hours from now.')
+        return delivery_date
+    

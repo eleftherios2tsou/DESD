@@ -88,7 +88,7 @@
 <nav>
     <a href="/" class="nav-brand">Bristol Food Network</a>
     <div class="nav-links">
-        <a href="#">Browse</a>
+        <a href="{% url 'product_list' %}">Browse</a>
         <a href="#">About</a>
         {% if request.user.is_authenticated %}
             {% if request.user.role == 'producer' %}
