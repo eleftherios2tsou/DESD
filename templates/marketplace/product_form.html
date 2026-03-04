@@ -129,7 +129,6 @@
     <a href="{% url 'dashboard' %}" class="back-link">← Back to dashboard</a>
     <h1>{{ action }} Product</h1>
 
-    <!-- reused for both create and edit, action variable set in view -->
     <form method="post" novalidate>
         {% csrf_token %}
 
@@ -153,7 +152,6 @@
         <p class="helptext">{{ form.allergens.help_text }}</p>
         {{ form.allergens.errors }}
 
-        <!-- TODO: maybe add image upload here at some point -->
         <p class="form-section-title">Dates & Availability</p>
         {{ form.harvest_date.label_tag }} {{ form.harvest_date }} {{ form.harvest_date.errors }}
         {{ form.best_before.label_tag }} {{ form.best_before }} {{ form.best_before.errors }}

@@ -60,4 +60,5 @@ class ProductForm(forms.ModelForm):
             'best_before': forms.DateInput(attrs={'type': 'date'}),
             'description': forms.Textarea(attrs={'rows': 4}),
             'allergens': forms.Textarea(attrs={'rows': 2}),
+            'address': forms.Textarea(attrs={'rows': 3}),
         }
