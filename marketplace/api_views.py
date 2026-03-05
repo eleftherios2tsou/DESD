@@ -1,8 +1,8 @@
 from rest_framework import viewsets, permissions, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import Category, Product
-from .serializers import CategorySerializer, ProductSerializer
+from .models import Category, Product, Order
+from .serializers import CategorySerializer, ProductSerializer, OrderSerializer
 
 
 class IsProducerOrReadOnly(permissions.BasePermission):
@@ -78,3 +78,18 @@ class ProductViewSet(viewsets.ModelViewSet):
         ).order_by('-created_at')
         serializer = self.get_serializer(products, many=True)
         return Response(serializer.data)
+
+
+class OrderViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    List and retrieve orders for the authenticated customer.
+    GET /api/orders/        — caller's own orders
+    GET /api/orders/{id}/   — order detail
+    """
+    serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Order.objects.filter(
+            customer=self.request.user
+        ).prefetch_related('items__product').order_by('-created_at')

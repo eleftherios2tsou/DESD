@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Category, Product, ProducerProfile
+from .models import Category, Product, ProducerProfile, Order, OrderItem
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -38,3 +38,26 @@ class ProductSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'producer', 'created_at', 'updated_at']
+
+
+class OrderItemSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.name', read_only=True)
+
+    class Meta:
+        model = OrderItem
+        fields = ['id', 'product', 'product_name', 'quantity', 'unit_price']
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    items = OrderItemSerializer(many=True, read_only=True)
+    customer_username = serializers.CharField(source='customer.username', read_only=True)
+
+    class Meta:
+        model = Order
+        fields = [
+            'id', 'customer_username', 'status',
+            'delivery_address', 'delivery_date',
+            'total_price', 'commission_amount',
+            'items', 'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'customer_username', 'total_price', 'commission_amount', 'created_at', 'updated_at']

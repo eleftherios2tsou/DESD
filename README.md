@@ -69,10 +69,10 @@ python manage.py runserver
 | S1-005  | Role-based access control (RBAC)             | Decorators/middleware to prevent customers accessing producer features and vice versa. Unauthorised access shows error. | TC-022 | Critical | Eleftherios | 3h | Done |
 | S1-006  | Product & Category models                    | Product model with: name, description, price, stock, allergens, organic flag, harvest date, best before, farm origin, seasonal availability, 48h lead time. | TC-003, TC-015 | Critical | Eleftherios | 3h | Done |
 | S1-007  | Producer: create/edit/list products          | Producer dashboard with product CRUD. ProductForm using Django ModelForm. | TC-003 | Critical | Eleftherios | 5h | Done |
-| S1-008  | Product browsing + search/filter             | Product list page with category filter, search by name, organic filter. Product detail page showing allergens, farm origin, harvest date. | TC-004, TC-015 | Critical | TBD | 4h | To Do |
-| S1-009  | Shopping cart (session-based)                | Add/remove/update cart items. Cart persists during session. Shows producer info and subtotals. | TC-006 | High | TBD | 3h | To Do |
-| S1-010  | Order model + basic checkout                 | Order and OrderItem models. Basic checkout flow with delivery address, date (min 48h), 5% commission calculation. | TC-007 | High | TBD | 5h | To Do |
-| S1-011  | Django REST Framework API setup              | Install DRF, configure authentication. Product and Order viewsets with serializers. Basic API browsable interface. | — | High | TBD | 3h | To Do |
-| S1-012  | Database migrations & admin setup            | Run and test migrations. Register all models in Django admin with useful list displays and filters. | — | High | TBD | 2h | To Do |
-| S1-013  | Base HTML templates                          | Base template with navbar (login/logout, role-aware links), home page, and shared CSS. | — | High | TBD | 3h | To Do |
+| S1-008  | Product browsing + search/filter             | Product list page with category filter, search by name, organic filter. Product detail page showing allergens, farm origin, harvest date. | TC-004, TC-015 | Critical | Gia Ngo | 4h | Done |
+| S1-009  | Shopping cart (session-based)                | Add/remove/update cart items. Cart persists during session. Shows producer info and subtotals. | TC-006 | High | Gia Ngo | 3h | Done |
+| S1-010  | Order model + basic checkout                 | Order and OrderItem models. Basic checkout flow with delivery address, date (min 48h), 5% commission calculation. | TC-007 | High | Gia Ngo | 5h | Done |
+| S1-011  | Django REST Framework API setup              | Install DRF, configure authentication. Product and Order viewsets with serializers. Basic API browsable interface. | — | High | Eleftherios | 3h | Done |
+| S1-012  | Database migrations & admin setup            | Run and test migrations. Register all models in Django admin with useful list displays and filters. | — | High | Eleftherios | 2h | Done |
+| S1-013  | Base HTML templates                          | Base template with navbar (login/logout, role-aware links), home page, and shared CSS. | — | High | Eleftherios | 3h | DOne |
 
