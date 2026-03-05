@@ -1,0 +1,327 @@
+{% extends 'base.html' %}
+
+{% block title %}Browse Products — Bristol Food Network{% endblock %}
+
+{% block extra_css %}
+
+.page-header {
+    margin-bottom: 2rem;
+}
+
+.page-header h1 {
+    font-size: 1.8rem;
+    color: #1a3a2a;
+    margin-bottom: 0.25rem;
+}
+
+.page-header p {
+    color: #666;
+    font-size: 0.95rem;
+}
+
+/* ── Filter Bar ── */
+.filter-bar {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    margin-bottom: 2rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    flex: 1;
+    min-width: 160px;
+}
+
+.filter-group label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.filter-group input,
+.filter-group select {
+    padding: 0.6rem 0.9rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #333;
+    background: #fafafa;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.filter-group input:focus,
+.filter-group select:focus {
+    border-color: #52b788;
+    box-shadow: 0 0 0 3px rgba(82,183,136,0.12);
+    background: #fff;
+}
+
+.filter-organic {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.6rem;
+}
+
+.filter-organic input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #52b788;
+    cursor: pointer;
+}
+
+.filter-organic label {
+    font-size: 0.9rem;
+    color: #333;
+    cursor: pointer;
+}
+
+.btn-filter {
+    padding: 0.6rem 1.4rem;
+    background: #52b788;
+    color: #1a3a2a;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.15s;
+    white-space: nowrap;
+}
+
+.btn-filter:hover { filter: brightness(1.08); transform: translateY(-1px); }
+
+.btn-clear {
+    padding: 0.6rem 1rem;
+    background: #f0f0f0;
+    color: #555;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+}
+
+.btn-clear:hover { background: #e5e5e5; }
+
+/* ── Results info ── */
+.results-info {
+    font-size: 0.88rem;
+    color: #888;
+    margin-bottom: 1rem;
+}
+
+.results-info strong { color: #1a3a2a; }
+
+/* ── Product Grid ── */
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.25rem;
+}
+
+/* ── Product Card ── */
+.product-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+}
+
+.product-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+.product-card-image {
+    background: linear-gradient(135deg, #e8f5ee, #d1fae5);
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+}
+
+.product-card-body {
+    padding: 1rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.product-card-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1a3a2a;
+    margin: 0;
+}
+
+.product-card-producer {
+    font-size: 0.8rem;
+    color: #888;
+}
+
+.product-card-price {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #2d6a4f;
+    margin-top: auto;
+    padding-top: 0.5rem;
+}
+
+.product-card-footer {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* ── Badges ── */
+.badge {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 99px;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+.badge-organic { background: #dcfce7; color: #166534; }
+.badge-out { background: #fee2e2; color: #b91c1c; }
+.badge-category { background: #e0f2fe; color: #0369a1; }
+
+/* ── Allergen warning ── */
+.allergen-warning {
+    font-size: 0.75rem;
+    color: #b45309;
+    background: #fef3c7;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+}
+
+/* ── Empty state ── */
+.empty-state {
+    text-align: center;
+    padding: 4rem 1rem;
+    color: #999;
+    grid-column: 1 / -1;
+}
+
+.empty-state .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+.empty-state p { font-size: 1rem; margin-bottom: 0.5rem; }
+.empty-state a { color: #52b788; text-decoration: none; font-weight: 600; }
+
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h1>Browse Products</h1>
+    <p>Fresh, local produce from Bristol's finest farms and producers</p>
+</div>
+
+<!-- Filter Bar -->
+<form method="get" action="{% url 'product_list' %}">
+    <div class="filter-bar">
+        <div class="filter-group">
+            <label for="search">Search</label>
+            <input type="text" id="search" name="search" placeholder="e.g. tomatoes, eggs..." value="{{ search }}">
+        </div>
+
+        <div class="filter-group">
+            <label for="category">Category</label>
+            <select id="category" name="category">
+                <option value="">All Categories</option>
+                {% for cat in categories %}
+                    <option value="{{ cat.slug }}" {% if category == cat.slug %}selected{% endif %}>
+                        {{ cat.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label>&nbsp;</label>
+            <div class="filter-organic">
+                <input type="checkbox" id="organic" name="organic" value="true" {% if organic %}checked{% endif %}>
+                <label for="organic">🌿 Organic only</label>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-filter">Search</button>
+        {% if search or category or organic %}
+            <a href="{% url 'product_list' %}" class="btn-clear">✕ Clear</a>
+        {% endif %}
+    </div>
+</form>
+
+<!-- Results count -->
+<p class="results-info">
+    Showing <strong>{{ products|length }}</strong> product{{ products|length|pluralize }}
+    {% if search %} for "<strong>{{ search }}</strong>"{% endif %}
+</p>
+
+<!-- Product Grid -->
+<div class="product-grid">
+    {% for product in products %}
+    <a href="{% url 'product_detail' product.pk %}" class="product-card">
+        <div class="product-card-image">
+            {% if product.category.name == "Vegetables" %}🥦
+            {% elif product.category.name == "Dairy & Eggs" %}🥛
+            {% elif product.category.name == "Bakery" %}🍞
+            {% elif product.category.name == "Preserves" %}🫙
+            {% else %}🌾{% endif %}
+        </div>
+        <div class="product-card-body">
+            <p class="product-card-name">{{ product.name }}</p>
+            <p class="product-card-producer">{{ product.producer.business_name }}</p>
+            {% if product.allergens %}
+                <span class="allergen-warning">⚠ {{ product.allergens }}</span>
+            {% endif %}
+            <p class="product-card-price">£{{ product.price }}</p>
+        </div>
+        <div class="product-card-footer">
+            <span class="badge badge-category">{{ product.category.name|default:"General" }}</span>
+            <span>
+                {% if product.is_organic %}
+                    <span class="badge badge-organic">Organic</span>
+                {% endif %}
+                {% if product.stock == 0 %}
+                    <span class="badge badge-out">Out of stock</span>
+                {% endif %}
+            </span>
+        </div>
+    </a>
+    {% empty %}
+    <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <p>No products found.</p>
+        {% if search or category or organic %}
+            <p><a href="{% url 'product_list' %}">Clear filters</a> to see all products.</p>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

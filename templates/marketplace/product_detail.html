@@ -1,0 +1,385 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ product.name }} — Bristol Food Network{% endblock %}
+
+{% block extra_css %}
+
+.breadcrumb {
+    font-size: 0.85rem;
+    color: #888;
+    margin-bottom: 1.5rem;
+}
+
+.breadcrumb a {
+    color: #52b788;
+    text-decoration: none;
+}
+
+.breadcrumb a:hover { text-decoration: underline; }
+.breadcrumb span { margin: 0 0.4rem; }
+
+/* ── Layout ── */
+.product-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2.5rem;
+    align-items: start;
+}
+
+@media (max-width: 680px) {
+    .product-layout { grid-template-columns: 1fr; }
+}
+
+/* ── Image Panel ── */
+.product-image-panel {
+    background: linear-gradient(135deg, #e8f5ee, #d1fae5);
+    border-radius: 16px;
+    height: 320px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 7rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+}
+
+/* ── Info Panel ── */
+.product-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.product-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.65rem;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-organic { background: #dcfce7; color: #166534; }
+.badge-category { background: #e0f2fe; color: #0369a1; }
+.badge-seasonal { background: #fef9c3; color: #854d0e; }
+.badge-out { background: #fee2e2; color: #b91c1c; }
+
+.product-name {
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: #1a3a2a;
+    line-height: 1.2;
+    margin: 0;
+}
+
+.product-producer {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.product-producer strong { color: #2d6a4f; }
+
+.product-price {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2d6a4f;
+}
+
+.product-description {
+    font-size: 0.95rem;
+    color: #555;
+    line-height: 1.7;
+    border-top: 1px solid #f0f0f0;
+    padding-top: 1rem;
+}
+
+/* ── Details Grid ── */
+.details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    border-top: 1px solid #f0f0f0;
+    padding-top: 1rem;
+}
+
+.detail-item {
+    background: #f8fdf9;
+    border-radius: 8px;
+    padding: 0.65rem 0.85rem;
+}
+
+.detail-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.2rem;
+}
+
+.detail-value {
+    font-size: 0.9rem;
+    color: #1a3a2a;
+    font-weight: 500;
+}
+
+/* ── Allergen Box ── */
+.allergen-box {
+    background: #fef3c7;
+    border: 1px solid #fcd34d;
+    border-left: 4px solid #f59e0b;
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+}
+
+.allergen-box .allergen-icon { font-size: 1.2rem; flex-shrink: 0; }
+
+.allergen-box .allergen-text {
+    font-size: 0.88rem;
+    color: #92400e;
+    line-height: 1.5;
+}
+
+.allergen-box .allergen-text strong {
+    display: block;
+    margin-bottom: 0.15rem;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.no-allergen-box {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-left: 4px solid #52b788;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.88rem;
+    color: #166534;
+}
+
+/* ── Add to Cart ── */
+.cart-section {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.quantity-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.quantity-label {
+    font-size: 0.85rem;
+    color: #555;
+    font-weight: 500;
+}
+
+.quantity-input {
+    width: 70px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    text-align: center;
+    outline: none;
+}
+
+.quantity-input:focus {
+    border-color: #52b788;
+    box-shadow: 0 0 0 3px rgba(82,183,136,0.12);
+}
+
+.btn-cart {
+    width: 100%;
+    padding: 0.85rem;
+    background: #52b788;
+    color: #1a3a2a;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.15s;
+    box-shadow: 0 4px 12px rgba(82,183,136,0.3);
+}
+
+.btn-cart:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.btn-cart:active { transform: translateY(0); }
+
+.btn-cart:disabled {
+    background: #ccc;
+    color: #888;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+    filter: none;
+}
+
+.stock-info {
+    font-size: 0.82rem;
+    color: #888;
+    text-align: center;
+}
+
+.stock-info.low { color: #b45309; }
+.stock-info.out { color: #b91c1c; }
+
+/* ── Back link ── */
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #52b788;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-top: 2rem;
+}
+
+.back-link:hover { text-decoration: underline; }
+
+{% endblock %}
+
+{% block content %}
+
+<!-- Breadcrumb -->
+<div class="breadcrumb">
+    <a href="{% url 'home' %}">Home</a>
+    <span>›</span>
+    <a href="{% url 'product_list' %}">Products</a>
+    <span>›</span>
+    {{ product.name }}
+</div>
+
+<!-- Main Layout -->
+<div class="product-layout">
+
+    <!-- Left: Image -->
+    <div class="product-image-panel">
+        {% if product.category.name == "Vegetables" %}🥦
+        {% elif product.category.name == "Dairy & Eggs" %}🥛
+        {% elif product.category.name == "Bakery" %}🍞
+        {% elif product.category.name == "Preserves" %}🫙
+        {% else %}🌾{% endif %}
+    </div>
+
+    <!-- Right: Info -->
+    <div class="product-info">
+
+        <!-- Badges -->
+        <div class="product-badges">
+            {% if product.category %}
+                <span class="badge badge-category">{{ product.category.name }}</span>
+            {% endif %}
+            {% if product.is_organic %}
+                <span class="badge badge-organic">🌿 Certified Organic</span>
+            {% endif %}
+            {% if product.is_seasonal %}
+                <span class="badge badge-seasonal">🌸 Seasonal</span>
+            {% endif %}
+            {% if product.stock == 0 %}
+                <span class="badge badge-out">Out of Stock</span>
+            {% endif %}
+        </div>
+
+        <h1 class="product-name">{{ product.name }}</h1>
+
+        <p class="product-producer">
+            From <strong>{{ product.producer.business_name }}</strong>
+            {% if product.farm_origin %} · {{ product.farm_origin }}{% endif %}
+        </p>
+
+        <p class="product-price">£{{ product.price }}</p>
+
+        <p class="product-description">{{ product.description }}</p>
+
+        <!-- Details Grid -->
+        <div class="details-grid">
+            {% if product.harvest_date %}
+            <div class="detail-item">
+                <div class="detail-label">Harvest Date</div>
+                <div class="detail-value">{{ product.harvest_date }}</div>
+            </div>
+            {% endif %}
+            {% if product.best_before %}
+            <div class="detail-item">
+                <div class="detail-label">Best Before</div>
+                <div class="detail-value">{{ product.best_before }}</div>
+            </div>
+            {% endif %}
+            {% if product.is_seasonal and product.seasonal_months %}
+            <div class="detail-item">
+                <div class="detail-label">In Season</div>
+                <div class="detail-value">{{ product.seasonal_months }}</div>
+            </div>
+            {% endif %}
+            <div class="detail-item">
+                <div class="detail-label">Lead Time</div>
+                <div class="detail-value">{{ product.lead_time_hours }} hours</div>
+            </div>
+        </div>
+
+        <!-- Allergen Info -->
+        {% if product.allergens %}
+            <div class="allergen-box">
+                <span class="allergen-icon">⚠️</span>
+                <div class="allergen-text">
+                    <strong>Allergen Information</strong>
+                    {{ product.allergens }}
+                </div>
+            </div>
+        {% else %}
+            <div class="no-allergen-box">
+                ✓ No common allergens declared for this product
+            </div>
+        {% endif %}
+
+        <!-- Add to Cart -->
+        {% if request.user.is_authenticated and request.user.role == 'customer' %}
+        <div class="cart-section">
+            <form method="post" action="{% url 'cart_add' product.pk %}">
+                {% csrf_token %}
+                <div class="quantity-row">
+                    <span class="quantity-label">Quantity:</span>
+                    <input type="number" name="quantity" value="1" min="1"
+                           max="{{ product.stock }}" class="quantity-input"
+                           {% if product.stock == 0 %}disabled{% endif %}>
+                </div>
+                <button type="submit" class="btn-cart" {% if product.stock == 0 %}disabled{% endif %}>
+                    {% if product.stock == 0 %}Out of Stock{% else %}🛒 Add to Cart{% endif %}
+                </button>
+            </form>
+            {% if product.stock == 0 %}
+                <p class="stock-info out">This product is currently out of stock.</p>
+            {% elif product.stock < 5 %}
+                <p class="stock-info low">⚠ Only {{ product.stock }} left in stock!</p>
+            {% else %}
+                <p class="stock-info">{{ product.stock }} available</p>
+            {% endif %}
+        </div>
+        {% elif not request.user.is_authenticated %}
+        <a href="{% url 'login' %}" class="btn-cart" style="display:block; text-align:center; text-decoration:none; padding:0.85rem; background:#52b788; color:#1a3a2a; border-radius:10px; font-weight:700;">
+            Log in to Add to Cart
+        </a>
+        {% endif %}
+
+    </div>
+</div>
+
+<a href="{% url 'product_list' %}" class="back-link">← Back to Products</a>
+
+{% endblock %}

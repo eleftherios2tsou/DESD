@@ -20,11 +20,13 @@ body {
     padding: 2rem;
 }
 
+/* ── Page wrapper ── */
 .login-wrapper {
     width: 100%;
     max-width: 440px;
 }
 
+/* ── Brand mark ── */
 .brand {
     text-align: center;
     margin-bottom: 2rem;
@@ -51,6 +53,7 @@ body {
     font-weight: 500;
 }
 
+/* ── Card ── */
 .login-card {
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(82, 183, 136, 0.15);
@@ -77,6 +80,7 @@ body {
     font-weight: 300;
 }
 
+/* ── Messages ── */
 .message-success {
     background: linear-gradient(135deg, rgba(82, 183, 136, 0.2), rgba(45, 106, 79, 0.2));
     border: 1px solid rgba(82, 183, 136, 0.4);
@@ -124,6 +128,7 @@ body {
     to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ── Form fields ── */
 .form-group {
     margin-bottom: 1.1rem;
 }
@@ -162,12 +167,7 @@ body {
     color: rgba(255, 255, 255, 0.2);
 }
 
-.form-group .message-error {
-    margin-top: 0.4rem;
-    margin-bottom: 0;
-}
-
-
+/* ── Submit button ── */
 button[type="submit"] {
     width: 100%;
     padding: 0.85rem;
@@ -195,6 +195,7 @@ button[type="submit"]:active {
     transform: translateY(0);
 }
 
+/* ── Footer link ── */
 .login-footer {
     text-align: center;
     margin-top: 1.5rem;
