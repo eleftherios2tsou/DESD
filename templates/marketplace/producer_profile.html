@@ -1,0 +1,228 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ profile.business_name }} — Bristol Food Network{% endblock %}
+
+{% block extra_css %}
+
+.breadcrumb {
+    font-size: 0.85rem;
+    color: #888;
+    margin-bottom: 1.5rem;
+}
+
+.breadcrumb a { color: #52b788; text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+.breadcrumb span { margin: 0 0.4rem; }
+
+/* ── Profile Header ── */
+.profile-header {
+    background: #fff;
+    border-radius: 16px;
+    padding: 2rem 2.5rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    display: flex;
+    align-items: flex-start;
+    gap: 2rem;
+    margin-bottom: 2.5rem;
+}
+
+.profile-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1a3a2a, #52b788);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    flex-shrink: 0;
+    color: #fff;
+    font-weight: 700;
+}
+
+.profile-info { flex: 1; }
+
+.profile-info h1 {
+    font-size: 1.8rem;
+    color: #1a3a2a;
+    margin-bottom: 0.5rem;
+}
+
+.profile-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.profile-meta-item {
+    font-size: 0.88rem;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.profile-description {
+    font-size: 0.95rem;
+    color: #555;
+    line-height: 1.7;
+    margin-top: 0.5rem;
+}
+
+/* ── Products Section ── */
+.section-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1a3a2a;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e8f5ee;
+}
+
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.25rem;
+}
+
+.product-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+}
+
+.product-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+.product-card-image {
+    background: linear-gradient(135deg, #e8f5ee, #d1fae5);
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+}
+
+.product-card-body {
+    padding: 1rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.product-card-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1a3a2a;
+    margin: 0;
+}
+
+.product-card-price {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #2d6a4f;
+    margin-top: auto;
+    padding-top: 0.5rem;
+}
+
+.product-card-footer {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 99px;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+.badge-organic { background: #dcfce7; color: #166534; }
+.badge-out { background: #fee2e2; color: #b91c1c; }
+.badge-category { background: #e0f2fe; color: #0369a1; }
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #999;
+    grid-column: 1 / -1;
+}
+
+.empty-state .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+
+{% endblock %}
+
+{% block content %}
+
+<div class="breadcrumb">
+    <a href="{% url 'home' %}">Home</a>
+    <span>›</span>
+    <a href="{% url 'product_list' %}">Products</a>
+    <span>›</span>
+    {{ profile.business_name }}
+</div>
+
+<!-- Profile Header -->
+<div class="profile-header">
+    <div class="profile-avatar">{{ profile.business_name|first|upper }}</div>
+    <div class="profile-info">
+        <h1>{{ profile.business_name }}</h1>
+        <div class="profile-meta">
+            <span class="profile-meta-item">📍 {{ profile.address }}{% if profile.postcode %}, {{ profile.postcode }}{% endif %}</span>
+        </div>
+        {% if profile.description %}
+            <p class="profile-description">{{ profile.description }}</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Products -->
+<p class="section-title">Products from {{ profile.business_name }}</p>
+
+<div class="product-grid">
+    {% for product in products %}
+    <a href="{% url 'product_detail' product.pk %}" class="product-card">
+        <div class="product-card-image" {% if product.image %}style="padding:0;"{% endif %}>
+            {% if product.image %}
+                <img src="{{ product.image.url }}" alt="{{ product.name }}" style="width:100%;height:100%;object-fit:cover;">
+            {% elif product.category.name == "Vegetables" %}🥦
+            {% elif product.category.name == "Dairy & Eggs" %}🥛
+            {% elif product.category.name == "Bakery" %}🍞
+            {% elif product.category.name == "Preserves" %}🫙
+            {% else %}🌾{% endif %}
+        </div>
+        <div class="product-card-body">
+            <p class="product-card-name">{{ product.name }}</p>
+            <p class="product-card-price">£{{ product.price }}</p>
+        </div>
+        <div class="product-card-footer">
+            <span class="badge badge-category">{{ product.category.name|default:"General" }}</span>
+            <span>
+                {% if product.is_organic %}<span class="badge badge-organic">Organic</span>{% endif %}
+                {% if product.stock == 0 %}<span class="badge badge-out">Out of stock</span>{% endif %}
+            </span>
+        </div>
+    </a>
+    {% empty %}
+    <div class="empty-state">
+        <div class="empty-icon">🌱</div>
+        <p>No active products listed yet.</p>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

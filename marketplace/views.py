@@ -2,7 +2,9 @@ from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.forms import AuthenticationForm
-from .forms import RegistrationForm, ProducerRegistrationForm, ProductForm,CheckoutForm
+from django.core.mail import send_mail
+from django.conf import settings
+from .forms import RegistrationForm, ProducerRegistrationForm, ProductForm, CheckoutForm
 from .models import ProducerProfile, Product, Category, Order, OrderItem
 from .decorators import producer_required, customer_required
 
@@ -81,7 +83,7 @@ def producer_dashboard(request):
 @producer_required
 def product_create(request):
     if request.method == 'POST':
-        form = ProductForm(request.POST)
+        form = ProductForm(request.POST, request.FILES)
         if form.is_valid():
             product = form.save(commit=False)
             product.producer = request.user.producer_profile
@@ -97,7 +99,7 @@ def product_create(request):
 def product_edit(request, pk):
     product = get_object_or_404(Product, pk=pk, producer=request.user.producer_profile)
     if request.method == 'POST':
-        form = ProductForm(request.POST, instance=product)
+        form = ProductForm(request.POST, request.FILES, instance=product)
         if form.is_valid():
             form.save()
             messages.success(request, f'Product "{product.name}" updated successfully.')
@@ -116,6 +118,12 @@ def product_delete(request, pk):
         messages.success(request, f'Product "{name}" deleted.')
         return redirect('dashboard')
     return render(request, 'marketplace/product_confirm_delete.html', {'product': product})
+
+def producer_profile(request, pk):
+    profile = get_object_or_404(ProducerProfile, pk=pk)
+    products = Product.objects.filter(producer=profile, is_active=True).order_by('-created_at')
+    return render(request, 'marketplace/producer_profile.html', {'profile': profile, 'products': products})
+
 
 def product_list(request):
     products = Product.objects.filter(is_active=True)
@@ -232,6 +240,57 @@ def checkout(request):
             
             # Clear cart
             del request.session['cart']
+
+            # Build item summary for emails
+            item_lines = '\n'.join(
+                f"  - {item['name']} x{item['quantity']}  £{item['subtotal']:.2f}"
+                for item in cart.values()
+            )
+
+            # Email to customer
+            if request.user.email:
+                send_mail(
+                    subject=f'Order #{order.id} Confirmed — Bristol Food Network',
+                    message=(
+                        f"Hi {request.user.username},\n\n"
+                        f"Your order has been placed successfully!\n\n"
+                        f"Order #{order.id}\n"
+                        f"Delivery date: {order.delivery_date}\n"
+                        f"Delivery address: {order.delivery_address}\n\n"
+                        f"Items:\n{item_lines}\n\n"
+                        f"Subtotal: £{total:.2f}\n"
+                        f"Commission (5%): £{commission:.2f}\n"
+                        f"Total: £{total + commission:.2f}\n\n"
+                        f"Thank you for supporting local producers!\n\n"
+                        f"Bristol Food Network"
+                    ),
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[request.user.email],
+                    fail_silently=True,
+                )
+
+            # Email to each unique producer
+            notified = set()
+            for product_id, item in cart.items():
+                product = Product.objects.filter(pk=int(product_id)).first()
+                if product and product.producer.user.email and product.producer.pk not in notified:
+                    notified.add(product.producer.pk)
+                    send_mail(
+                        subject=f'New Order #{order.id} for your products',
+                        message=(
+                            f"Hi {product.producer.business_name},\n\n"
+                            f"You have a new order from {request.user.username}.\n\n"
+                            f"Order #{order.id}\n"
+                            f"Delivery date: {order.delivery_date}\n\n"
+                            f"Items ordered from you:\n{item_lines}\n\n"
+                            f"Please confirm the order from your dashboard.\n\n"
+                            f"Bristol Food Network"
+                        ),
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[product.producer.user.email],
+                        fail_silently=True,
+                    )
+
             messages.success(request, f'Order #{order.id} placed successfully!')
             return redirect('home')
     else:

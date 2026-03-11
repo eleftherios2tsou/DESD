@@ -64,6 +64,7 @@ class Product(models.Model):
     lead_time_hours = models.PositiveIntegerField(
         default=48, help_text='Minimum order lead time in hours'
     )
+    image = models.ImageField(upload_to='products/', blank=True, null=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
