@@ -116,7 +116,7 @@ def product_delete(request, pk):
         messages.success(request, f'Product "{name}" deleted.')
         return redirect('dashboard')
     return render(request, 'marketplace/product_confirm_delete.html', {'product': product})
-
+@customer_required
 def product_list(request):
     products = Product.objects.filter(is_active=True)
     
