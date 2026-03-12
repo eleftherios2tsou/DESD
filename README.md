@@ -74,5 +74,22 @@ python manage.py runserver
 | S1-010  | Order model + basic checkout                 | Order and OrderItem models. Basic checkout flow with delivery address, date (min 48h), 5% commission calculation. | TC-007 | High | Gia Ngo | 5h | Done |
 | S1-011  | Django REST Framework API setup              | Install DRF, configure authentication. Product and Order viewsets with serializers. Basic API browsable interface. | — | High | Eleftherios | 3h | Done |
 | S1-012  | Database migrations & admin setup            | Run and test migrations. Register all models in Django admin with useful list displays and filters. | — | High | Eleftherios | 2h | Done |
-| S1-013  | Base HTML templates                          | Base template with navbar (login/logout, role-aware links), home page, and shared CSS. | — | High | Eleftherios | 3h | DOne |
+| S1-013  | Base HTML templates                          | Base template with navbar (login/logout, role-aware links), home page, and shared CSS. | — | High | Eleftherios | 3h | Done |
+
+## Sprint 2 Target Features
+
+| ID | Task Title | Description / Acceptance Criteria | Test Cases | Priority | Assignee | Estimate | Status |
+|----|------------|-----------------------------------|------------|----------|----------|----------|--------|
+| S2-001 | Producer order management | Producers see a dashboard view listing all orders containing their products. Can update order status: Pending → Confirmed → Delivered. Orders scoped to logged-in producer only. | TC-008 | Critical | Gia Ngo | 4h | To Do |
+| S2-002 | Customer order history | Authenticated customers can view a list of their past orders with status, itemised products, subtotals, delivery date, and commission. | TC-009 | Critical | Gia Ngo | 3h | To Do |
+| S2-003 | Stock decrement on checkout | When an order is placed, each product's stock field is reduced by the ordered quantity. Products with zero stock show as out of stock and cannot be added to cart. | TC-010 | Critical | Gia Ngo | 2h | To Do |
+| S2-004 | Product image upload | Producers can upload an image when creating or editing a product. Image displayed on the product list card and product detail page. Use Pillow + Django's ImageField. Store in /media/. | TC-011 | High | Eleftherios | 4h | To Do |
+| S2-005 | Public producer profile page | Public page at /producers/<id>/ showing business name, description, postcode, and all active products from that producer. Product detail page links to the producer profile. | TC-012 | High | Eleftherios | 3h | To Do |
+| S2-006 | Order confirmation email | On successful checkout, send an email to the customer summarising the order. Send a separate notification email to each producer whose products were ordered. Use Django's built-in email backend. | TC-013 | High | Eleftherios | 3h | To Do |
+| S2-007 | User account settings | Authenticated users can update their email address and change their password. Producers can additionally edit their business name, address, postcode, and description from their dashboard. | TC-014 | Medium | Gia Ngo | 3h | To Do |
+| S2-008 | Order API enhancements | Customers can create orders via POST /api/orders/. Producers can update order status via PATCH /api/orders/<id>/. Serializer validates delivery date is at least 48 hours ahead. | — | Medium | Gia Ngo | 3h | To Do |
+| S2-009 | Delivery date validation | Enforce 48-hour minimum lead time on the checkout form with a clear validation error. Block past dates. | TC-016 | Medium | Gia Ngo | 2h | To Do |
+| S2-010 | Featured products on homepage | Homepage displays the 6 most recently added active products in a grid. Each card shows name, producer, price, and organic badge. Links to the full product list. | TC-017 | Medium | Eleftherios | 2h | To Do |
+| S2-011 | Product reviews & ratings | Customers with a Delivered order containing a product can leave a 1–5 star rating and a text comment. Average rating displayed on the product detail page. | TC-018 | Low | Eleftherios | 4h | To Do |
+| S2-012 | Responsive / mobile layout | Fix layouts that break below 768px — navbar collapses, product grid stacks, forms are full width. Tested on mobile viewport in browser dev tools. | TC-019 | Low | Eleftherios | 3h | To Do |
 

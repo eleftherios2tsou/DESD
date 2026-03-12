@@ -130,7 +130,7 @@
     <h1>{{ action }} Product</h1>
 
     <!-- reused for both create and edit, action variable set in view -->
-    <form method="post" novalidate>
+    <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
 
         {% if form.non_field_errors %}
@@ -153,7 +153,15 @@
         <p class="helptext">{{ form.allergens.help_text }}</p>
         {{ form.allergens.errors }}
 
-        <!-- TODO: maybe add image upload here at some point -->
+        <p class="form-section-title">Product Image</p>
+        {% if product.image %}
+            <div style="margin-bottom:0.75rem;">
+                <img src="{{ product.image.url }}" alt="Current image" style="max-height:140px;border-radius:8px;border:1px solid #eee;">
+                <p class="helptext" style="margin-top:0.3rem;">Current image — upload a new one to replace it</p>
+            </div>
+        {% endif %}
+        {{ form.image.label_tag }} {{ form.image }} {{ form.image.errors }}
+
         <p class="form-section-title">Dates & Availability</p>
         {{ form.harvest_date.label_tag }} {{ form.harvest_date }} {{ form.harvest_date.errors }}
         {{ form.best_before.label_tag }} {{ form.best_before }} {{ form.best_before.errors }}

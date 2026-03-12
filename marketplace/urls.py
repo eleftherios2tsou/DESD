@@ -16,7 +16,10 @@ urlpatterns = [
     path('dashboard/products/<int:pk>/edit/', views.product_edit, name='product_edit'),
     path('dashboard/products/<int:pk>/delete/', views.product_delete, name='product_delete'),
 
-    #Customer views 
+    # Producer public profile
+    path('producers/<int:pk>/', views.producer_profile, name='producer_profile'),
+
+    #Customer views
     path('products/', views.product_list, name='product_list'),
     path('products/<int:pk>/', views.product_detail, name='product_detail'),
     path('cart/', views.cart_view, name='cart_view'),

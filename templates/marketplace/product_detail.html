@@ -269,8 +269,10 @@
 <div class="product-layout">
 
     <!-- Left: Image -->
-    <div class="product-image-panel">
-        {% if product.category.name == "Vegetables" %}🥦
+    <div class="product-image-panel" {% if product.image %}style="padding:0;overflow:hidden;"{% endif %}>
+        {% if product.image %}
+            <img src="{{ product.image.url }}" alt="{{ product.name }}" style="width:100%;height:100%;object-fit:cover;border-radius:16px;">
+        {% elif product.category.name == "Vegetables" %}🥦
         {% elif product.category.name == "Dairy & Eggs" %}🥛
         {% elif product.category.name == "Bakery" %}🍞
         {% elif product.category.name == "Preserves" %}🫙
@@ -299,7 +301,7 @@
         <h1 class="product-name">{{ product.name }}</h1>
 
         <p class="product-producer">
-            From <strong>{{ product.producer.business_name }}</strong>
+            From <strong><a href="{% url 'producer_profile' product.producer.pk %}" style="color:#2d6a4f;text-decoration:none;">{{ product.producer.business_name }}</a></strong>
             {% if product.farm_origin %} · {{ product.farm_origin }}{% endif %}
         </p>
 
