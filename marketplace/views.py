@@ -116,7 +116,7 @@ def product_delete(request, pk):
         messages.success(request, f'Product "{name}" deleted.')
         return redirect('dashboard')
     return render(request, 'marketplace/product_confirm_delete.html', {'product': product})
-@customer_required
+
 def product_list(request):
     products = Product.objects.filter(is_active=True)
     
@@ -144,6 +144,24 @@ def product_list(request):
 def product_detail(request, pk):
     product = get_object_or_404(Product, pk=pk, is_active=True)
     return render(request, 'marketplace/product_detail.html', {'product': product})
+
+@producer_required
+def producer_orders_management(request):
+    orders = Order.objects.filter(items__product__producer=request.user.producer_profile).distinct().order_by('-created_at')
+    return render(request, 'marketplace/producer_orders.html', {'orders': orders})
+@producer_required
+def update_order_status(request, pk):
+    order = get_object_or_404(Order, pk=pk, items__product__producer=request.user.producer_profile)
+    if request.method == 'POST':
+        new_status = request.POST.get('status')
+        if new_status in dict(Order.STATUS_CHOICES):
+            order.status = new_status
+            order.save()
+            messages.success(request, f'Order #{order.id} status updated to {new_status}.')
+        else:
+            messages.error(request, 'Invalid status selected.')
+    return redirect('producer_orders')
+
 
 @customer_required
 def cart_add(request, pk):
@@ -229,6 +247,9 @@ def checkout(request):
                     quantity=item['quantity'],
                     unit_price=item['price']
                 )
+            #Update product stock
+                product.stock -= item['quantity']
+                product.save()
             
             # Clear cart
             del request.session['cart']
@@ -250,3 +271,8 @@ def checkout(request):
         'total': total,
         'commission': commission
     })
+
+@customer_required
+def order_history(request):
+    orders = Order.objects.filter(customer=request.user).order_by('-created_at')
+    return render(request, 'marketplace/order_history.html', {'orders': orders})
