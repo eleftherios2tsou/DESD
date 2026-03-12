@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+
+{% block title %}Order History — Bristol Food Network{% endblock %}
+
+{% block extra_css %}
+
+.page-header {
+    margin-bottom: 2rem;
+}
+
+.page-header h1 {
+    font-size: 1.8rem;
+    color: #1a3a2a;
+    margin-bottom: 0.25rem;
+}
+
+.page-header p { color: #666; font-size: 0.95rem; }
+
+/* ── Order Card ── */
+.order-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+}
+
+.order-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+
+.order-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    background: #f8fdf9;
+    border-bottom: 1px solid #e8f5ee;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.order-meta {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+}
+
+.order-id {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1a3a2a;
+}
+
+.order-date { font-size: 0.82rem; color: #888; }
+
+.order-delivery {
+    font-size: 0.82rem;
+    color: #555;
+    background: #e8f5ee;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+}
+
+/* ── Status Badge ── */
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 99px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.badge-pending { background: #fef3c7; color: #92400e; }
+.badge-confirmed { background: #dbeafe; color: #1e40af; }
+.badge-delivered { background: #d1fae5; color: #065f46; }
+
+/* ── Order Body ── */
+.order-body {
+    padding: 1.25rem 1.5rem;
+}
+
+.order-items-title {
+    font-size: 0.78rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+.order-item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid #f5f5f5;
+    font-size: 0.9rem;
+}
+
+.order-item-row:last-child { border-bottom: none; }
+
+.order-item-left { display: flex; flex-direction: column; gap: 0.1rem; }
+.order-item-name { color: #333; font-weight: 500; }
+.order-item-producer { font-size: 0.78rem; color: #888; }
+.order-item-qty { color: #888; font-size: 0.82rem; }
+.order-item-price { color: #2d6a4f; font-weight: 600; }
+
+/* ── Order Footer ── */
+.order-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #f0f0f0;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    background: #fafafa;
+}
+
+.order-totals { display: flex; flex-direction: column; gap: 0.2rem; }
+
+.total-row {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.85rem;
+    color: #555;
+}
+
+.total-row.main {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1a3a2a;
+}
+
+.total-row span:last-child { color: #2d6a4f; }
+
+.commission-note {
+    font-size: 0.75rem;
+    color: #aaa;
+}
+
+.delivery-info {
+    font-size: 0.82rem;
+    color: #666;
+    text-align: right;
+}
+
+.delivery-info strong { color: #1a3a2a; display: block; margin-bottom: 0.1rem; }
+
+/* ── Empty State ── */
+.empty-state {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    padding: 4rem 2rem;
+    text-align: center;
+    color: #999;
+}
+
+.empty-state .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+.empty-state p { font-size: 1rem; margin-bottom: 1rem; }
+.empty-state a {
+    display: inline-block;
+    padding: 0.65rem 1.5rem;
+    background: #52b788;
+    color: #1a3a2a;
+    border-radius: 8px;
+    font-weight: 700;
+    text-decoration: none;
+}
+.empty-state a:hover { filter: brightness(1.08); }
+
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h1>Order History</h1>
+    <p>Track all your past and current orders</p>
+</div>
+
+{% if orders %}
+    {% for order in orders %}
+    <div class="order-card">
+
+        <!-- Header -->
+        <div class="order-card-header">
+            <div class="order-meta">
+                <span class="order-id">Order #{{ order.id }}</span>
+                <span class="order-date">{{ order.created_at|date:"d M Y, H:i" }}</span>
+                <span class="order-delivery">🚚 {{ order.delivery_date|date:"d M Y" }}</span>
+            </div>
+            <span class="badge badge-{{ order.status }}">
+                {{ order.get_status_display }}
+            </span>
+        </div>
+
+        <!-- Items -->
+        <div class="order-body">
+            <p class="order-items-title">Items Ordered</p>
+            {% for item in order.items.all %}
+            <div class="order-item-row">
+                <div class="order-item-left">
+                    <span class="order-item-name">{{ item.product.name }}</span>
+                    <span class="order-item-producer">{{ item.product.producer.business_name }}</span>
+                </div>
+                <span class="order-item-qty">× {{ item.quantity }}</span>
+                <span class="order-item-price">£{{ item.unit_price }}</span>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Footer -->
+        <div class="order-card-footer">
+            <div class="order-totals">
+                <div class="total-row main">
+                    <span>Total Paid</span>
+                    <span>£{{ order.total_price }}</span>
+                </div>
+                <div class="total-row">
+                    <span class="commission-note">Includes 5% platform commission (£{{ order.commission_amount }})</span>
+                </div>
+            </div>
+            <div class="delivery-info">
+                <strong>Delivery Address</strong>
+                {{ order.delivery_address }}
+            </div>
+        </div>
+
+    </div>
+    {% endfor %}
+
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">🛒</div>
+    <p>You haven't placed any orders yet.</p>
+    <a href="{% url 'product_list' %}">Start Shopping</a>
+</div>
+{% endif %}
+
+{% endblock %}
