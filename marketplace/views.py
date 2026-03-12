@@ -175,13 +175,18 @@ def update_order_status(request, pk):
 def cart_add(request, pk):
     if request.method != 'POST':
         return redirect('product_list')
-    product = get_object_or_404(Product, pk=pk)
+    product = get_object_or_404(Product, pk=pk, is_active=True)
     cart = request.session.get('cart', {})
     quantity = int(request.POST.get('quantity', 1))
-    
+
     product_id = str(pk)
+    current_in_cart = cart[product_id]['quantity'] if product_id in cart else 0
+    if product.stock < current_in_cart + quantity:
+        messages.error(request, f'Not enough stock for "{product.name}". Only {product.stock} available.')
+        return redirect('product_detail', pk=pk)
+
     if product_id in cart:
-        cart[product_id]['quantity'] += quantity  # increase if already in cart
+        cart[product_id]['quantity'] += quantity
     else:
         cart[product_id] = {
             'name': product.name,
@@ -189,7 +194,7 @@ def cart_add(request, pk):
             'quantity': quantity,
             'producer': product.producer.business_name
         }
-    
+
     request.session['cart'] = cart
     return redirect('cart_view')
 @customer_required
@@ -230,13 +235,20 @@ def checkout(request):
     if request.method == 'POST':
         form = CheckoutForm(request.POST)
         if form.is_valid():
+            # Validate stock before creating anything
+            for product_id, item in cart.items():
+                product = get_object_or_404(Product, pk=int(product_id))
+                if product.stock < item['quantity']:
+                    messages.error(request, f'"{product.name}" only has {product.stock} units in stock. Please update your cart.')
+                    return redirect('cart_view')
+
             # Calculate total
             for item in cart.values():
                 item['subtotal'] = float(item['price']) * item['quantity']
 
-            total = sum(item['subtotal'] for item in cart.values()) 
+            total = sum(item['subtotal'] for item in cart.values())
             commission = total * 0.05
-            
+
             # Create order
             order = Order.objects.create(
                 customer=request.user,
@@ -290,25 +302,35 @@ def checkout(request):
                     fail_silently=True,
                 )
 
-            # Email to each unique producer
-            notified = set()
+            # Email to each unique producer — only their own items
+            producer_items = {}
             for product_id, item in cart.items():
                 product = Product.objects.filter(pk=int(product_id)).first()
-                if product and product.producer.user.email and product.producer.pk not in notified:
-                    notified.add(product.producer.pk)
+                if product:
+                    pid = product.producer.pk
+                    if pid not in producer_items:
+                        producer_items[pid] = {'producer': product.producer, 'lines': []}
+                    producer_items[pid]['lines'].append(
+                        f"  - {item['name']} x{item['quantity']}  £{item['subtotal']:.2f}"
+                    )
+
+            for pid, data in producer_items.items():
+                producer = data['producer']
+                if producer.user.email:
+                    producer_item_lines = '\n'.join(data['lines'])
                     send_mail(
                         subject=f'New Order #{order.id} for your products',
                         message=(
-                            f"Hi {product.producer.business_name},\n\n"
+                            f"Hi {producer.business_name},\n\n"
                             f"You have a new order from {request.user.username}.\n\n"
                             f"Order #{order.id}\n"
                             f"Delivery date: {order.delivery_date}\n\n"
-                            f"Items ordered from you:\n{item_lines}\n\n"
+                            f"Items ordered from you:\n{producer_item_lines}\n\n"
                             f"Please confirm the order from your dashboard.\n\n"
                             f"Bristol Food Network"
                         ),
                         from_email=settings.DEFAULT_FROM_EMAIL,
-                        recipient_list=[product.producer.user.email],
+                        recipient_list=[producer.user.email],
                         fail_silently=True,
                     )
 
