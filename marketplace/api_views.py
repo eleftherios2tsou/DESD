@@ -1,8 +1,8 @@
-from rest_framework import viewsets, permissions, filters
+from rest_framework import viewsets, permissions, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import Category, Product, Order
-from .serializers import CategorySerializer, ProductSerializer, OrderSerializer
+from .serializers import CategorySerializer, ProductSerializer, OrderSerializer, OrderCreateSerializer, OrderStatusSerializer
 
 
 class IsProducerOrReadOnly(permissions.BasePermission):
@@ -80,16 +80,65 @@ class ProductViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class OrderViewSet(viewsets.ReadOnlyModelViewSet):
+class IsCustomer(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role == 'customer'
+
+
+class IsProducer(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role == 'producer'
+
+
+class OrderViewSet(viewsets.ModelViewSet):
     """
-    List and retrieve orders for the authenticated customer.
-    GET /api/orders/        — caller's own orders
-    GET /api/orders/{id}/   — order detail
+    GET    /api/orders/         — own orders (customers) or orders with their products (producers)
+    GET    /api/orders/{id}/    — order detail
+    POST   /api/orders/         — create order (customers only)
+    PATCH  /api/orders/{id}/    — update status (producers only, for orders containing their products)
     """
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ['get', 'post', 'patch', 'head', 'options']
 
     def get_queryset(self):
+        user = self.request.user
+        if user.role == 'producer':
+            return Order.objects.filter(
+                items__product__producer=user.producer_profile
+            ).distinct().prefetch_related('items__product').order_by('-created_at')
         return Order.objects.filter(
-            customer=self.request.user
+            customer=user
         ).prefetch_related('items__product').order_by('-created_at')
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return OrderCreateSerializer
+        if self.action == 'partial_update':
+            return OrderStatusSerializer
+        return OrderSerializer
+
+    def get_permissions(self):
+        if self.action == 'create':
+            return [permissions.IsAuthenticated(), IsCustomer()]
+        if self.action == 'partial_update':
+            return [permissions.IsAuthenticated(), IsProducer()]
+        return [permissions.IsAuthenticated()]
+
+    def create(self, request, *args, **kwargs):
+        serializer = OrderCreateSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        order = serializer.save()
+        return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
+
+    def partial_update(self, request, *args, **kwargs):
+        order = self.get_object()
+        if not order.items.filter(product__producer=request.user.producer_profile).exists():
+            return Response(
+                {'detail': 'You do not have permission to update this order.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        serializer = OrderStatusSerializer(order, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(OrderSerializer(order).data)

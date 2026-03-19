@@ -30,4 +30,7 @@ urlpatterns = [
     path('cart/update/<int:pk>/', views.cart_update, name='cart_update'),
     path('checkout/', views.checkout, name='checkout'),
     path('orders/history/', views.order_history, name='order_history'),
+
+    # Account settings
+    path('account/settings/', views.account_settings, name='account_settings'),
 ]

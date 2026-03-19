@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+
+{% block title %}Account Settings — Bristol Food Network{% endblock %}
+
+{% block extra_css %}
+
+.breadcrumb {
+    font-size: 0.85rem;
+    color: #888;
+    margin-bottom: 1.5rem;
+}
+.breadcrumb a { color: #52b788; text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+.breadcrumb span { margin: 0 0.4rem; }
+
+.page-header {
+    margin-bottom: 2rem;
+}
+.page-header h1 {
+    font-size: 1.8rem;
+    color: #1a3a2a;
+    margin-bottom: 0.25rem;
+}
+.page-header p { color: #666; font-size: 0.95rem; }
+
+.settings-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: start;
+}
+
+@media (max-width: 720px) {
+    .settings-layout { grid-template-columns: 1fr; }
+}
+
+.form-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    padding: 2rem;
+}
+
+.form-card h2 {
+    font-size: 1.1rem;
+    color: #1a3a2a;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.form-group {
+    margin-bottom: 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.form-group label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    padding: 0.7rem 0.9rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.92rem;
+    color: #333;
+    background: #fafafa;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    border-color: #52b788;
+    box-shadow: 0 0 0 3px rgba(82,183,136,0.12);
+    background: #fff;
+}
+
+.form-group textarea { resize: vertical; }
+
+.field-error {
+    font-size: 0.78rem;
+    color: #b91c1c;
+    margin-top: 0.1rem;
+}
+
+.field-help {
+    font-size: 0.78rem;
+    color: #999;
+}
+
+.btn-save {
+    width: 100%;
+    padding: 0.85rem;
+    background: #1a3a2a;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 0.5rem;
+    transition: filter 0.15s, transform 0.15s;
+    box-shadow: 0 4px 12px rgba(26,58,42,0.2);
+}
+.btn-save:hover { filter: brightness(1.15); transform: translateY(-1px); }
+.btn-save:active { transform: translateY(0); }
+
+.alert {
+    padding: 0.85rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+}
+.alert-success {
+    background: #f0fdf4;
+    border-left: 3px solid #52b788;
+    color: #166534;
+}
+.alert-error {
+    background: #fee2e2;
+    border-left: 3px solid #e05252;
+    color: #b91c1c;
+}
+
+.section-divider {
+    font-size: 0.75rem;
+    color: #aaa;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 1.5rem 0 1rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+{% endblock %}
+
+{% block content %}
+
+<div class="breadcrumb">
+    <a href="{% url 'home' %}">Home</a>
+    <span>›</span>
+    Account Settings
+</div>
+
+<div class="page-header">
+    <h1>Account Settings</h1>
+    <p>Update your email, password{% if request.user.role == 'producer' %}, and business details{% endif %}</p>
+</div>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-success">{{ message }}</div>
+    {% endfor %}
+{% endif %}
+
+<form method="post">
+{% csrf_token %}
+<div class="settings-layout">
+
+    <!-- Left: Account details -->
+    <div class="form-card">
+        <h2>Account Details</h2>
+
+        <div class="form-group">
+            <label for="id_email">Email Address</label>
+            {{ account_form.email }}
+            {% if account_form.email.errors %}
+                <span class="field-error">{{ account_form.email.errors.0 }}</span>
+            {% endif %}
+        </div>
+
+        <p class="section-divider">Change Password</p>
+
+        <div class="form-group">
+            <label for="id_new_password1">New Password</label>
+            {{ account_form.new_password1 }}
+            <span class="field-help">{{ account_form.new_password1.help_text }}</span>
+            {% if account_form.new_password1.errors %}
+                <span class="field-error">{{ account_form.new_password1.errors.0 }}</span>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="id_new_password2">Confirm New Password</label>
+            {{ account_form.new_password2 }}
+            {% if account_form.new_password2.errors %}
+                <span class="field-error">{{ account_form.new_password2.errors.0 }}</span>
+            {% endif %}
+        </div>
+
+        {% if account_form.non_field_errors %}
+            <p class="field-error">{{ account_form.non_field_errors.0 }}</p>
+        {% endif %}
+    </div>
+
+    <!-- Right: Producer profile (producers only) or save button -->
+    <div>
+        {% if producer_form %}
+        <div class="form-card" style="margin-bottom: 2rem;">
+            <h2>Business Details</h2>
+
+            <div class="form-group">
+                <label for="id_business_name">Business Name</label>
+                {{ producer_form.business_name }}
+                {% if producer_form.business_name.errors %}
+                    <span class="field-error">{{ producer_form.business_name.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_address">Address</label>
+                {{ producer_form.address }}
+                {% if producer_form.address.errors %}
+                    <span class="field-error">{{ producer_form.address.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_postcode">Postcode</label>
+                {{ producer_form.postcode }}
+                {% if producer_form.postcode.errors %}
+                    <span class="field-error">{{ producer_form.postcode.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_description">Description</label>
+                {{ producer_form.description }}
+                {% if producer_form.description.errors %}
+                    <span class="field-error">{{ producer_form.description.errors.0 }}</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <button type="submit" class="btn-save">Save Changes</button>
+    </div>
+
+</div>
+</form>
+
+{% endblock %}

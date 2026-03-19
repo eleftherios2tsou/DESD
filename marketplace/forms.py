@@ -1,6 +1,6 @@
 from django.contrib.auth.forms import UserCreationForm
 from django import forms
-from .models import CustomUser, Product
+from .models import CustomUser, Product, ProducerProfile
 from datetime import date, timedelta
 
 
@@ -62,6 +62,58 @@ class ProductForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'rows': 4}),
             'allergens': forms.Textarea(attrs={'rows': 2}),
         }
+class AccountSettingsForm(forms.ModelForm):
+    new_password1 = forms.CharField(
+        label='New password',
+        widget=forms.PasswordInput,
+        required=False,
+        help_text='Leave blank to keep your current password.',
+    )
+    new_password2 = forms.CharField(
+        label='Confirm new password',
+        widget=forms.PasswordInput,
+        required=False,
+    )
+
+    class Meta:
+        model = CustomUser
+        fields = ['email']
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if CustomUser.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError('An account with this email already exists.')
+        return email
+
+    def clean(self):
+        cleaned_data = super().clean()
+        p1 = cleaned_data.get('new_password1')
+        p2 = cleaned_data.get('new_password2')
+        if p1 or p2:
+            if p1 != p2:
+                raise forms.ValidationError('The two password fields did not match.')
+        return cleaned_data
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        password = self.cleaned_data.get('new_password1')
+        if password:
+            user.set_password(password)
+        if commit:
+            user.save()
+        return user
+
+
+class ProducerProfileForm(forms.ModelForm):
+    class Meta:
+        model = ProducerProfile
+        fields = ['business_name', 'address', 'postcode', 'description']
+        widgets = {
+            'address': forms.Textarea(attrs={'rows': 3}),
+            'description': forms.Textarea(attrs={'rows': 3}),
+        }
+
+
 class CheckoutForm(forms.Form):
     full_name = forms.CharField(max_length=200)
     email = forms.EmailField()

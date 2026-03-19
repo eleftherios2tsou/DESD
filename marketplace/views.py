@@ -1,10 +1,10 @@
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login as auth_login, logout as auth_logout
+from django.contrib.auth import login as auth_login, logout as auth_logout, update_session_auth_hash
 from django.contrib.auth.forms import AuthenticationForm
 from django.core.mail import send_mail
 from django.conf import settings
-from .forms import RegistrationForm, ProducerRegistrationForm, ProductForm, CheckoutForm
+from .forms import RegistrationForm, ProducerRegistrationForm, ProductForm, CheckoutForm, AccountSettingsForm, ProducerProfileForm
 from .models import ProducerProfile, Product, Category, Order, OrderItem
 from .decorators import producer_required, customer_required
 
@@ -169,6 +169,38 @@ def update_order_status(request, pk):
         else:
             messages.error(request, 'Invalid status selected.')
     return redirect('producer_orders')
+
+
+def account_settings(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+
+    producer_form = None
+
+    if request.method == 'POST':
+        account_form = AccountSettingsForm(request.POST, instance=request.user)
+        if request.user.role == 'producer':
+            producer_form = ProducerProfileForm(request.POST, instance=request.user.producer_profile)
+
+        account_valid = account_form.is_valid()
+        producer_valid = producer_form.is_valid() if producer_form else True
+
+        if account_valid and producer_valid:
+            user = account_form.save()
+            if producer_form:
+                producer_form.save()
+            update_session_auth_hash(request, user)
+            messages.success(request, 'Account settings updated successfully.')
+            return redirect('account_settings')
+    else:
+        account_form = AccountSettingsForm(instance=request.user)
+        if request.user.role == 'producer':
+            producer_form = ProducerProfileForm(instance=request.user.producer_profile)
+
+    return render(request, 'marketplace/account_settings.html', {
+        'account_form': account_form,
+        'producer_form': producer_form,
+    })
 
 
 @customer_required
