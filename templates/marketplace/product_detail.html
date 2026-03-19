@@ -76,11 +76,7 @@
     margin: 0;
 }
 
-.product-producer {
-    font-size: 0.9rem;
-    color: #666;
-}
-
+.product-producer { font-size: 0.9rem; color: #666; }
 .product-producer strong { color: #2d6a4f; }
 
 .product-price {
@@ -229,12 +225,7 @@
     filter: none;
 }
 
-.stock-info {
-    font-size: 0.82rem;
-    color: #888;
-    text-align: center;
-}
-
+.stock-info { font-size: 0.82rem; color: #888; text-align: center; }
 .stock-info.low { color: #b45309; }
 .stock-info.out { color: #b91c1c; }
 
@@ -251,6 +242,91 @@
 }
 
 .back-link:hover { text-decoration: underline; }
+
+/* ── Reviews Section ── */
+.reviews-section {
+    margin-top: 3rem;
+    border-top: 2px solid #e8f5ee;
+    padding-top: 2rem;
+}
+
+.reviews-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.reviews-header h2 {
+    font-size: 1.3rem;
+    color: #1a3a2a;
+    margin: 0 0 0.3rem;
+}
+
+.avg-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.avg-stars { font-size: 1.2rem; color: #f59e0b; }
+.avg-number { font-size: 1rem; font-weight: 700; color: #1a3a2a; }
+.avg-count { font-size: 0.82rem; color: #888; }
+
+.btn-review {
+    display: inline-block;
+    padding: 0.55rem 1.25rem;
+    background: #52b788;
+    color: #1a3a2a;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: filter 0.15s;
+    white-space: nowrap;
+}
+
+.btn-review:hover { filter: brightness(1.08); }
+
+.review-card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.review-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.4rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.review-author { font-size: 0.9rem; font-weight: 700; color: #1a3a2a; }
+.review-date { font-size: 0.78rem; color: #aaa; }
+
+.review-stars {
+    color: #f59e0b;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.05em;
+}
+
+.review-comment { font-size: 0.9rem; color: #555; line-height: 1.6; }
+
+.no-reviews {
+    background: #f8fdf9;
+    border-radius: 10px;
+    padding: 2.5rem;
+    text-align: center;
+    color: #aaa;
+    font-size: 0.95rem;
+}
 
 {% endblock %}
 
@@ -304,6 +380,14 @@
             From <strong><a href="{% url 'producer_profile' product.producer.pk %}" style="color:#2d6a4f;text-decoration:none;">{{ product.producer.business_name }}</a></strong>
             {% if product.farm_origin %} · {{ product.farm_origin }}{% endif %}
         </p>
+
+        <!-- Inline avg rating -->
+        {% if avg_rating %}
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+            <span style="color:#f59e0b;">★★★★★</span>
+            <span style="font-size:0.85rem; color:#888;">{{ avg_rating|floatformat:1 }} / 5 ({{ reviews.count }} review{{ reviews.count|pluralize }})</span>
+        </div>
+        {% endif %}
 
         <p class="product-price">£{{ product.price }}</p>
 
@@ -380,6 +464,46 @@
         {% endif %}
 
     </div>
+</div>
+
+<!-- ── Reviews Section ── -->
+<div class="reviews-section">
+    <div class="reviews-header">
+        <div>
+            <h2>Customer Reviews</h2>
+            {% if avg_rating %}
+            <div class="avg-rating">
+                <span class="avg-stars">★★★★★</span>
+                <span class="avg-number">{{ avg_rating|floatformat:1 }}</span>
+                <span class="avg-count">{{ reviews.count }} review{{ reviews.count|pluralize }}</span>
+            </div>
+            {% endif %}
+        </div>
+        {% if request.user.is_authenticated and request.user.role == 'customer' %}
+            <a href="{% url 'submit_review' product.pk %}" class="btn-review">✍ Write a Review</a>
+        {% endif %}
+    </div>
+
+    {% if reviews %}
+        {% for review in reviews %}
+        <div class="review-card">
+            <div class="review-top">
+                <span class="review-author">{{ review.customer.username }}</span>
+                <span class="review-date">{{ review.created_at|date:"d M Y" }}</span>
+            </div>
+            <div class="review-stars">
+                {% for i in "12345" %}
+                    {% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}
+                {% endfor %}
+            </div>
+            <p class="review-comment">{{ review.comment }}</p>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="no-reviews">
+            No reviews yet — be the first to review this product!
+        </div>
+    {% endif %}
 </div>
 
 <a href="{% url 'product_list' %}" class="back-link">← Back to Products</a>

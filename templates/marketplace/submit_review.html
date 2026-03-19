@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+
+{% block title %}Review {{ product.name }} — Bristol Food Network{% endblock %}
+
+{% block extra_css %}
+
+.review-wrapper {
+    max-width: 560px;
+    margin: 0 auto;
+}
+
+.breadcrumb {
+    font-size: 0.85rem;
+    color: #888;
+    margin-bottom: 1.5rem;
+}
+
+.breadcrumb a { color: #52b788; text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+.breadcrumb span { margin: 0 0.4rem; }
+
+.review-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    overflow: hidden;
+}
+
+.review-card-header {
+    padding: 1.25rem 1.5rem;
+    background: #f8fdf9;
+    border-bottom: 1px solid #e8f5ee;
+}
+
+.review-card-header h1 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1a3a2a;
+    margin: 0 0 0.2rem;
+}
+
+.review-card-header p {
+    font-size: 0.85rem;
+    color: #888;
+    margin: 0;
+}
+
+.review-card-body { padding: 1.5rem; }
+
+/* ── Star Rating ── */
+.form-group { margin-bottom: 1.25rem; }
+
+.form-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.star-radio-group {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.star-radio-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.95rem;
+    color: #555;
+    cursor: pointer;
+    font-weight: 500;
+    margin: 0;
+}
+
+.star-radio-group input[type="radio"] {
+    accent-color: #52b788;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* ── Comment ── */
+.form-group textarea {
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #333;
+    background: #fafafa;
+    outline: none;
+    resize: vertical;
+    box-sizing: border-box;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.form-group textarea:focus {
+    border-color: #52b788;
+    box-shadow: 0 0 0 2px rgba(82,183,136,0.12);
+    background: #fff;
+}
+
+.field-error {
+    font-size: 0.78rem;
+    color: #e05252;
+    margin-top: 0.3rem;
+}
+
+/* ── Actions ── */
+.form-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    margin-top: 1.5rem;
+}
+
+.btn-submit {
+    padding: 0.65rem 1.75rem;
+    background: #52b788;
+    color: #1a3a2a;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: filter 0.15s;
+}
+
+.btn-submit:hover { filter: brightness(1.08); }
+
+.btn-cancel {
+    font-size: 0.88rem;
+    color: #888;
+    text-decoration: none;
+}
+
+.btn-cancel:hover { color: #333; }
+
+{% endblock %}
+
+{% block content %}
+<div class="review-wrapper">
+
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">Home</a>
+        <span>›</span>
+        <a href="{% url 'product_list' %}">Products</a>
+        <span>›</span>
+        <a href="{% url 'product_detail' product.pk %}">{{ product.name }}</a>
+        <span>›</span>
+        Write Review
+    </div>
+
+    <div class="review-card">
+        <div class="review-card-header">
+            <h1>Write a Review</h1>
+            <p>{{ product.name }} · {{ product.producer.business_name }}</p>
+        </div>
+        <div class="review-card-body">
+            <form method="post">
+                {% csrf_token %}
+
+                <!-- Star Rating -->
+                <div class="form-group">
+                    <label>Your Rating</label>
+                    <div class="star-radio-group">
+                        {% for value, label in form.rating.field.choices %}
+                        <label>
+                            <input type="radio" name="rating" value="{{ value }}"
+                                {% if form.rating.value == value|stringformat:"s" %}checked{% endif %}>
+                            {{ label }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% if form.rating.errors %}
+                        {% for error in form.rating.errors %}
+                            <p class="field-error">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <!-- Comment -->
+                <div class="form-group">
+                    <label for="{{ form.comment.id_for_label }}">Your Review</label>
+                    {{ form.comment }}
+                    {% if form.comment.errors %}
+                        {% for error in form.comment.errors %}
+                            <p class="field-error">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-submit">Submit Review</button>
+                    <a href="{% url 'product_detail' product.pk %}" class="btn-cancel">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

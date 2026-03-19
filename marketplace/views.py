@@ -4,13 +4,15 @@ from django.contrib.auth import login as auth_login, logout as auth_logout, upda
 from django.contrib.auth.forms import AuthenticationForm
 from django.core.mail import send_mail
 from django.conf import settings
-from .forms import RegistrationForm, ProducerRegistrationForm, ProductForm, CheckoutForm, AccountSettingsForm, ProducerProfileForm
-from .models import ProducerProfile, Product, Category, Order, OrderItem
+from django.db.models import Avg
+from .forms import RegistrationForm, ProducerRegistrationForm, ProductForm, CheckoutForm, AccountSettingsForm, ProducerProfileForm, ReviewForm
+from .models import ProducerProfile, Product, Category, Order, OrderItem, Review   
 from .decorators import producer_required, customer_required
 
 
 def home(request):
-    return render(request, 'marketplace/home.html')
+    featured_products = Product.objects.filter(is_active=True).order_by('-created_at')[:6]
+    return render(request, 'marketplace/home.html',{'featured_products': featured_products})
 
 
 def register(request):
@@ -151,7 +153,13 @@ def product_list(request):
 
 def product_detail(request, pk):
     product = get_object_or_404(Product, pk=pk, is_active=True)
-    return render(request, 'marketplace/product_detail.html', {'product': product})
+    reviews = product.reviews.all().order_by('-created_at')
+    avg_rating = reviews.aggregate(Avg('rating'))['rating__avg']    
+    return render(request, 'marketplace/product_detail.html', {
+        'product': product,
+        'reviews': reviews,
+        'avg_rating': avg_rating,})
+
 
 @producer_required
 def producer_orders_management(request):
@@ -389,3 +397,39 @@ def checkout(request):
 def order_history(request):
     orders = Order.objects.filter(customer=request.user).order_by('-created_at')
     return render(request, 'marketplace/order_history.html', {'orders': orders})
+@customer_required
+def submit_review(request,product_pk):
+    product = get_object_or_404(Product, pk=product_pk)
+
+    # Check customer has a delivered order containing this product
+    has_delivered_order = Order.objects.filter(
+        customer=request.user,
+        status='delivered',
+        items__product=product
+    ).exists()
+
+    if not has_delivered_order:
+        messages.error(request, 'You can only review products from delivered orders.')
+        return redirect('product_detail', pk=product_pk)
+
+    # Check they haven't already reviewed this product
+    if Review.objects.filter(product=product, customer=request.user).exists():
+        messages.error(request, 'You have already reviewed this product.')
+        return redirect('product_detail', pk=product_pk)
+
+    if request.method == 'POST':
+        form = ReviewForm(request.POST)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.product = product
+            review.customer = request.user
+            review.save()
+            messages.success(request, 'Your review has been submitted.')
+            return redirect('product_detail', pk=product_pk)
+    else:
+        form = ReviewForm()
+
+    return render(request, 'marketplace/submit_review.html', {
+        'form': form,
+        'product': product,
+    })
