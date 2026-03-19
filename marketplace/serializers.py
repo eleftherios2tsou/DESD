@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from datetime import date, timedelta
+from decimal import Decimal
 from .models import Category, Product, ProducerProfile, Order, OrderItem
 
 
@@ -61,3 +63,68 @@ class OrderSerializer(serializers.ModelSerializer):
             'items', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'customer_username', 'total_price', 'commission_amount', 'created_at', 'updated_at']
+
+
+class OrderStatusSerializer(serializers.ModelSerializer):
+    """Used by producers to update order status only."""
+    class Meta:
+        model = Order
+        fields = ['status']
+
+
+class OrderItemCreateSerializer(serializers.Serializer):
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.filter(is_active=True))
+    quantity = serializers.IntegerField(min_value=1)
+
+
+class OrderCreateSerializer(serializers.Serializer):
+    """Used by customers to create an order via the API."""
+    delivery_address = serializers.CharField()
+    delivery_date = serializers.DateField()
+    items = OrderItemCreateSerializer(many=True)
+
+    def validate_delivery_date(self, value):
+        if value < date.today() + timedelta(days=2):
+            raise serializers.ValidationError('Delivery date must be at least 48 hours from now.')
+        return value
+
+    def validate_items(self, value):
+        if not value:
+            raise serializers.ValidationError('Order must contain at least one item.')
+        return value
+
+    def validate(self, attrs):
+        for item in attrs.get('items', []):
+            product = item['product']
+            if product.stock < item['quantity']:
+                raise serializers.ValidationError(
+                    f'Insufficient stock for "{product.name}". Only {product.stock} available.'
+                )
+        return attrs
+
+    def create(self, validated_data):
+        items_data = validated_data.pop('items')
+        customer = self.context['request'].user
+        total = sum(item['product'].price * item['quantity'] for item in items_data)
+        commission = total * Decimal('0.05')
+
+        order = Order.objects.create(
+            customer=customer,
+            delivery_address=validated_data['delivery_address'],
+            delivery_date=validated_data['delivery_date'],
+            total_price=total,
+            commission_amount=commission,
+        )
+
+        for item in items_data:
+            product = item['product']
+            OrderItem.objects.create(
+                order=order,
+                product=product,
+                quantity=item['quantity'],
+                unit_price=product.price,
+            )
+            product.stock -= item['quantity']
+            product.save()
+
+        return order
