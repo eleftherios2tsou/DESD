@@ -33,4 +33,5 @@ urlpatterns = [
 
     # Account settings
     path('account/settings/', views.account_settings, name='account_settings'),
+    path('products/<int:product_pk>/review/', views.submit_review, name='submit_review'),
 ]

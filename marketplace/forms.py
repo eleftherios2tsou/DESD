@@ -2,6 +2,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django import forms
 from .models import CustomUser, Product, ProducerProfile
 from datetime import date, timedelta
+from .models import Review
 
 
 class RegistrationForm(UserCreationForm):
@@ -127,4 +128,17 @@ class CheckoutForm(forms.Form):
         if delivery_date < min_date:
             raise forms.ValidationError('Delivery date must be at least 48 hours from now.')
         return delivery_date
+
+class ReviewForm(forms.ModelForm):
+    rating = forms.ChoiceField(
+        choices=[(i, f'{i} ★') for i in range(1, 6)],
+        widget=forms.RadioSelect,
+    )
+
+    class Meta:
+        model = Review
+        fields = ['rating', 'comment']
+        widgets = {
+            'comment': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Share your experience...'})
+        }
     
