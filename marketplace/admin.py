@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser, ProducerProfile, Category, Product, Order, OrderItem
+from .models import CustomUser, ProducerProfile, Category, Product, Order, OrderItem, Review
 
 
 @admin.register(CustomUser)
@@ -51,3 +51,10 @@ class OrderAdmin(admin.ModelAdmin):
 class OrderItemAdmin(admin.ModelAdmin):
     list_display = ['order', 'product', 'quantity', 'unit_price']
     search_fields = ['order__id', 'product__name']
+
+
+@admin.register(Review)
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = ['product', 'customer', 'rating', 'created_at']
+    list_filter = ['rating']
+    search_fields = ['product__name', 'customer__username']

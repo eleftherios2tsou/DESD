@@ -84,16 +84,74 @@
         margin-bottom: 1rem;
     }
 
-    .products-placeholder {
-        background: #fff;
-        border-radius: 8px;
-        padding: 3rem;
-        text-align: center;
-        color: #999;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    .featured-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 1.25rem;
+        margin-bottom: 2.5rem;
     }
 
-    .products-placeholder p { font-size: 1rem; }
+    .product-card {
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+        overflow: hidden;
+        text-decoration: none;
+        color: inherit;
+        display: flex;
+        flex-direction: column;
+        transition: box-shadow 0.15s, transform 0.15s;
+    }
+
+    .product-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.12); transform: translateY(-2px); }
+
+    .product-card-img {
+        height: 160px;
+        background: linear-gradient(135deg, #e8f5ee, #d1fae5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 4rem;
+        overflow: hidden;
+    }
+
+    .product-card-img img { width: 100%; height: 100%; object-fit: cover; }
+
+    .product-card-body { padding: 1rem; flex: 1; display: flex; flex-direction: column; gap: 0.4rem; }
+
+    .product-card-name { font-size: 1rem; font-weight: 700; color: #1a3a2a; }
+
+    .product-card-producer { font-size: 0.8rem; color: #888; }
+
+    .product-card-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: auto;
+        padding-top: 0.5rem;
+    }
+
+    .product-card-price { font-size: 1.1rem; font-weight: 700; color: #2d6a4f; }
+
+    .badge-organic-sm {
+        background: #dcfce7;
+        color: #166534;
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 0.2rem 0.5rem;
+        border-radius: 99px;
+    }
+
+    .view-all {
+        display: inline-block;
+        margin-bottom: 2.5rem;
+        color: #52b788;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+
+    .view-all:hover { text-decoration: underline; }
 {% endblock %}
 
 {% block content %}
@@ -139,5 +197,31 @@
 </div>
 
 <h2 class="section-title">Featured Products</h2>
+
+{% if featured_products %}
+<div class="featured-grid">
+    {% for product in featured_products %}
+    <a href="{% url 'product_detail' product.pk %}" class="product-card">
+        <div class="product-card-img">
+            {% if product.image %}
+                <img src="{{ product.image.url }}" alt="{{ product.name }}">
+            {% elif product.category.name == "Vegetables" %}🥦
+            {% elif product.category.name == "Dairy & Eggs" %}🥛
+            {% elif product.category.name == "Bakery" %}🍞
+            {% else %}🌾{% endif %}
+        </div>
+        <div class="product-card-body">
+            <div class="product-card-name">{{ product.name }}</div>
+            <div class="product-card-producer">{{ product.producer.business_name }}</div>
+            <div class="product-card-footer">
+                <span class="product-card-price">£{{ product.price }}</span>
+                {% if product.is_organic %}<span class="badge-organic-sm">🌿 Organic</span>{% endif %}
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+<a href="{% url 'product_list' %}" class="view-all">View all products →</a>
+{% endif %}
 
 {% endblock %}

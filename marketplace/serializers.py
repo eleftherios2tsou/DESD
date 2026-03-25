@@ -66,7 +66,6 @@ class OrderSerializer(serializers.ModelSerializer):
 
 
 class OrderStatusSerializer(serializers.ModelSerializer):
-    """Used by producers to update order status only."""
     class Meta:
         model = Order
         fields = ['status']
@@ -78,7 +77,6 @@ class OrderItemCreateSerializer(serializers.Serializer):
 
 
 class OrderCreateSerializer(serializers.Serializer):
-    """Used by customers to create an order via the API."""
     delivery_address = serializers.CharField()
     delivery_date = serializers.DateField()
     items = OrderItemCreateSerializer(many=True)
@@ -107,7 +105,6 @@ class OrderCreateSerializer(serializers.Serializer):
         customer = self.context['request'].user
         total = sum(item['product'].price * item['quantity'] for item in items_data)
         commission = total * Decimal('0.05')
-
         order = Order.objects.create(
             customer=customer,
             delivery_address=validated_data['delivery_address'],
@@ -115,7 +112,6 @@ class OrderCreateSerializer(serializers.Serializer):
             total_price=total,
             commission_amount=commission,
         )
-
         for item in items_data:
             product = item['product']
             OrderItem.objects.create(
@@ -126,5 +122,4 @@ class OrderCreateSerializer(serializers.Serializer):
             )
             product.stock -= item['quantity']
             product.save()
-
         return order

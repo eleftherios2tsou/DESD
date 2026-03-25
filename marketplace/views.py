@@ -5,12 +5,13 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.core.mail import send_mail
 from django.conf import settings
 from .forms import RegistrationForm, ProducerRegistrationForm, ProductForm, CheckoutForm, AccountSettingsForm, ProducerProfileForm
-from .models import ProducerProfile, Product, Category, Order, OrderItem
+from .models import ProducerProfile, Product, Category, Order, OrderItem, Review
 from .decorators import producer_required, customer_required
 
 
 def home(request):
-    return render(request, 'marketplace/home.html')
+    featured_products = Product.objects.filter(is_active=True).order_by('-created_at')[:6]
+    return render(request, 'marketplace/home.html', {'featured_products': featured_products})
 
 
 def register(request):
@@ -71,6 +72,38 @@ def logout_view(request):
     auth_logout(request)
     return redirect('home')
 
+
+
+def account_settings(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+
+    producer_form = None
+
+    if request.method == 'POST':
+        account_form = AccountSettingsForm(request.POST, instance=request.user)
+        if request.user.role == 'producer':
+            producer_form = ProducerProfileForm(request.POST, instance=request.user.producer_profile)
+
+        account_valid = account_form.is_valid()
+        producer_valid = producer_form.is_valid() if producer_form else True
+
+        if account_valid and producer_valid:
+            user = account_form.save()
+            if producer_form:
+                producer_form.save()
+            update_session_auth_hash(request, user)
+            messages.success(request, 'Account settings updated successfully.')
+            return redirect('account_settings')
+    else:
+        account_form = AccountSettingsForm(instance=request.user)
+        if request.user.role == 'producer':
+            producer_form = ProducerProfileForm(instance=request.user.producer_profile)
+
+    return render(request, 'marketplace/account_settings.html', {
+        'account_form': account_form,
+        'producer_form': producer_form,
+    })
 
 
 @producer_required
@@ -151,7 +184,26 @@ def product_list(request):
 
 def product_detail(request, pk):
     product = get_object_or_404(Product, pk=pk, is_active=True)
-    return render(request, 'marketplace/product_detail.html', {'product': product})
+    reviews = product.reviews.select_related('customer').order_by('-created_at')
+    user_reviewed = (
+        request.user.is_authenticated and
+        reviews.filter(customer=request.user).exists()
+    )
+    can_review = (
+        request.user.is_authenticated and
+        request.user.role == 'customer' and
+        not user_reviewed and
+        OrderItem.objects.filter(
+            order__customer=request.user,
+            order__status='delivered',
+            product=product
+        ).exists()
+    )
+    return render(request, 'marketplace/product_detail.html', {
+        'product': product,
+        'reviews': reviews,
+        'can_review': can_review,
+    })
 
 @producer_required
 def producer_orders_management(request):
@@ -169,38 +221,6 @@ def update_order_status(request, pk):
         else:
             messages.error(request, 'Invalid status selected.')
     return redirect('producer_orders')
-
-
-def account_settings(request):
-    if not request.user.is_authenticated:
-        return redirect('login')
-
-    producer_form = None
-
-    if request.method == 'POST':
-        account_form = AccountSettingsForm(request.POST, instance=request.user)
-        if request.user.role == 'producer':
-            producer_form = ProducerProfileForm(request.POST, instance=request.user.producer_profile)
-
-        account_valid = account_form.is_valid()
-        producer_valid = producer_form.is_valid() if producer_form else True
-
-        if account_valid and producer_valid:
-            user = account_form.save()
-            if producer_form:
-                producer_form.save()
-            update_session_auth_hash(request, user)
-            messages.success(request, 'Account settings updated successfully.')
-            return redirect('account_settings')
-    else:
-        account_form = AccountSettingsForm(instance=request.user)
-        if request.user.role == 'producer':
-            producer_form = ProducerProfileForm(instance=request.user.producer_profile)
-
-    return render(request, 'marketplace/account_settings.html', {
-        'account_form': account_form,
-        'producer_form': producer_form,
-    })
 
 
 @customer_required
@@ -389,3 +409,28 @@ def checkout(request):
 def order_history(request):
     orders = Order.objects.filter(customer=request.user).order_by('-created_at')
     return render(request, 'marketplace/order_history.html', {'orders': orders})
+
+
+@customer_required
+def product_review(request, pk):
+    product = get_object_or_404(Product, pk=pk, is_active=True)
+    has_delivered = OrderItem.objects.filter(
+        order__customer=request.user,
+        order__status='delivered',
+        product=product
+    ).exists()
+    if not has_delivered:
+        messages.error(request, 'You can only review products from delivered orders.')
+        return redirect('product_detail', pk=pk)
+    if Review.objects.filter(product=product, customer=request.user).exists():
+        messages.error(request, 'You have already reviewed this product.')
+        return redirect('product_detail', pk=pk)
+    if request.method == 'POST':
+        rating = int(request.POST.get('rating', 0))
+        comment = request.POST.get('comment', '')
+        if 1 <= rating <= 5:
+            Review.objects.create(product=product, customer=request.user, rating=rating, comment=comment)
+            messages.success(request, 'Review submitted successfully!')
+        else:
+            messages.error(request, 'Please select a rating between 1 and 5.')
+    return redirect('product_detail', pk=pk)

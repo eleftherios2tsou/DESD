@@ -97,3 +97,17 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity} x {self.product.name} in Order #{self.order.id}"
+
+
+class Review(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
+    customer = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='reviews')
+    rating = models.PositiveIntegerField()
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('product', 'customer')
+
+    def __str__(self):
+        return f"{self.customer.username} — {self.product.name} ({self.rating}★)"

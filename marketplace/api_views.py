@@ -95,7 +95,7 @@ class OrderViewSet(viewsets.ModelViewSet):
     GET    /api/orders/         — own orders (customers) or orders with their products (producers)
     GET    /api/orders/{id}/    — order detail
     POST   /api/orders/         — create order (customers only)
-    PATCH  /api/orders/{id}/    — update status (producers only, for orders containing their products)
+    PATCH  /api/orders/{id}/    — update status (producers only)
     """
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated]

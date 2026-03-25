@@ -122,7 +122,7 @@
                 <a href="{% url 'order_history' %}">My Orders</a>
                 <a href="{% url 'cart_view' %}">Cart</a>
             {% endif %}
-            <span style="color:rgba(255,255,255,0.5);font-size:0.85rem;">{{ request.user.username }}</span>
+            <a href="{% url 'account_settings' %}" style="color:rgba(255,255,255,0.85);text-decoration:none;padding:0.4rem 0.9rem;border-radius:5px;font-size:0.9rem;">{{ request.user.username }}</a>
             <a href="{% url 'logout' %}" class="btn-login">Logout</a>
         {% else %}
             <a href="{% url 'login' %}" class="btn-login">Log In</a>
