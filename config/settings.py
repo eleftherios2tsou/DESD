@@ -88,7 +88,7 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Email — prints to console in development; swap for SMTP in production
+# Email — prints to console in development but will set it up for the final sprint review
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'Bristol Food Network <noreply@bristolfoodnetwork.co.uk>'
 
