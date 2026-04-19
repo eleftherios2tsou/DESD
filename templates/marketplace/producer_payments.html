@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+
+{% block title %}Payments — Bristol Food Network{% endblock %}
+
+{% block extra_css %}
+
+.page-header { margin-bottom: 2rem; }
+.page-header h1 { font-size: 1.8rem; color: #1a3a2a; margin-bottom: 0.25rem; }
+.page-header p { color: #666; font-size: 0.95rem; }
+
+/* ── Tax year banner ── */
+.tax-banner {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 2rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 1rem;
+    align-items: center;
+}
+
+@media (max-width: 680px) { .tax-banner { grid-template-columns: 1fr 1fr; } }
+
+.tax-stat { display: flex; flex-direction: column; gap: 0.2rem; }
+.tax-stat .label { font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+.tax-stat .value { font-size: 1.3rem; font-weight: 700; color: #1a3a2a; }
+.tax-stat .value.net { color: #2d6a4f; }
+
+.btn-export {
+    padding: 0.65rem 1.25rem;
+    background: #52b788;
+    color: #1a3a2a;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.88rem;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: filter 0.15s;
+}
+
+.btn-export:hover { filter: brightness(1.08); }
+
+/* ── Week card ── */
+.week-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+}
+
+.week-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: #f8fdf9;
+    border-bottom: 1px solid #e8f5ee;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    cursor: pointer;
+}
+
+.week-title { font-size: 0.95rem; font-weight: 700; color: #1a3a2a; }
+.week-date { font-size: 0.8rem; color: #888; }
+
+.week-totals {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.week-stat { display: flex; flex-direction: column; align-items: flex-end; gap: 0.1rem; }
+.week-stat .wlabel { font-size: 0.7rem; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; }
+.week-stat .wvalue { font-size: 0.92rem; font-weight: 700; }
+.week-stat .wvalue.gross { color: #555; }
+.week-stat .wvalue.commission { color: #b45309; }
+.week-stat .wvalue.net { color: #2d6a4f; }
+
+.week-body { padding: 1rem 1.5rem; display: none; }
+.week-body.open { display: block; }
+
+.order-group { margin-bottom: 0.75rem; }
+.order-group-title {
+    font-size: 0.75rem;
+    color: #888;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.4rem;
+}
+
+.item-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.88rem;
+    color: #444;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.item-row:last-child { border-bottom: none; }
+.item-name { flex: 1; }
+.item-qty { color: #888; margin: 0 1rem; }
+.item-price { font-weight: 600; color: #2d6a4f; }
+
+/* ── Empty state ── */
+.empty-state {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    padding: 4rem 2rem;
+    text-align: center;
+    color: #999;
+}
+
+.empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
+.empty-state p { font-size: 1rem; }
+
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h1>Payment Settlements</h1>
+    <p>Weekly breakdown of your earnings — tax year starts {{ tax_year_start|date:"j M Y" }}</p>
+</div>
+
+<!-- Tax year summary -->
+<div class="tax-banner">
+    <div class="tax-stat">
+        <span class="label">Tax year gross</span>
+        <span class="value">£{{ tax_year_gross|floatformat:2 }}</span>
+    </div>
+    <div class="tax-stat">
+        <span class="label">Commission paid (5%)</span>
+        <span class="value" style="color:#b45309;">£{% widthratio tax_year_gross 100 5 %}</span>
+    </div>
+    <div class="tax-stat">
+        <span class="label">Tax year net (95%)</span>
+        <span class="value net">£{{ tax_year_net|floatformat:2 }}</span>
+    </div>
+    <a href="{% url 'producer_payments_export' %}" class="btn-export">⬇ Export CSV</a>
+</div>
+
+{% if week_summaries %}
+    {% for week in week_summaries %}
+    <div class="week-card">
+        <div class="week-header" onclick="toggleWeek(this)">
+            <div>
+                <p class="week-title">Week {{ week.week }}, {{ week.year }}</p>
+                <p class="week-date">{{ week.start_date|date:"d M" }} – {{ week.end_date|date:"d M Y" }}</p>
+            </div>
+            <div class="week-totals">
+                <div class="week-stat">
+                    <span class="wlabel">Gross</span>
+                    <span class="wvalue gross">£{{ week.gross|floatformat:2 }}</span>
+                </div>
+                <div class="week-stat">
+                    <span class="wlabel">Commission</span>
+                    <span class="wvalue commission">−£{{ week.commission|floatformat:2 }}</span>
+                </div>
+                <div class="week-stat">
+                    <span class="wlabel">Net payout</span>
+                    <span class="wvalue net">£{{ week.net|floatformat:2 }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="week-body">
+            {% regroup week.items by order as order_groups %}
+            {% for order_group in order_groups %}
+            <div class="order-group">
+                <p class="order-group-title">Order #{{ order_group.grouper.id }} — {{ order_group.grouper.customer.username }} — delivered {{ order_group.grouper.delivery_date|date:"d M Y" }}</p>
+                {% for item in order_group.list %}
+                <div class="item-row">
+                    <span class="item-name">{{ item.product.name|default:"Deleted product" }}</span>
+                    <span class="item-qty">× {{ item.quantity }}</span>
+                    <span class="item-price">£{{ item.unit_price|floatformat:2 }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+
+{% else %}
+<div class="empty-state">
+    <div class="icon">💰</div>
+    <p>No delivered orders yet. Settlements appear here once orders are marked as delivered.</p>
+</div>
+{% endif %}
+
+<script>
+    function toggleWeek(header) {
+        const body = header.nextElementSibling;
+        body.classList.toggle('open');
+    }
+</script>
+
+{% endblock %}

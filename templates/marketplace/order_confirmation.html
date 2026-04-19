@@ -1,0 +1,259 @@
+{% extends 'base.html' %}
+
+{% block title %}Order Confirmed — Bristol Food Network{% endblock %}
+
+{% block extra_css %}
+
+.page-header { margin-bottom: 2rem; }
+.page-header h1 { font-size: 1.8rem; color: #1a3a2a; margin-bottom: 0.25rem; }
+.page-header p { color: #666; font-size: 0.95rem; }
+
+.success-banner {
+    background: #d1fae5;
+    border: 1px solid #6ee7b7;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.success-banner .icon { font-size: 1.8rem; }
+
+.success-banner h2 {
+    font-size: 1.1rem;
+    color: #065f46;
+    font-weight: 700;
+    margin-bottom: 0.15rem;
+}
+
+.success-banner p { font-size: 0.88rem; color: #047857; }
+
+.confirmation-layout {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 2rem;
+    align-items: start;
+}
+
+@media (max-width: 720px) { .confirmation-layout { grid-template-columns: 1fr; } }
+
+/* ── Cards ── */
+.card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.card h3 {
+    font-size: 0.8rem;
+    color: #888;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 1rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+/* ── Producer section ── */
+.producer-section { margin-bottom: 1.25rem; }
+
+.producer-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #52b788;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.5rem;
+}
+
+.item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid #f5f5f5;
+    font-size: 0.9rem;
+}
+
+.item-row:last-of-type { border-bottom: none; }
+
+.item-left { display: flex; flex-direction: column; gap: 0.1rem; }
+.item-name { color: #333; font-weight: 500; }
+.item-qty { font-size: 0.78rem; color: #888; }
+.item-price { font-weight: 600; color: #2d6a4f; }
+
+.producer-subtotal {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.82rem;
+    color: #555;
+    padding: 0.5rem 0;
+    border-top: 1px dashed #e5e5e5;
+    margin-top: 0.25rem;
+}
+
+/* ── Summary sidebar ── */
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    color: #555;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.summary-row:last-child { border-bottom: none; }
+
+.summary-row.total {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1a3a2a;
+    border-top: 2px solid #1a3a2a;
+    margin-top: 0.5rem;
+    padding-top: 0.75rem;
+    border-bottom: none;
+}
+
+/* ── Status badge ── */
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 99px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.badge-paid { background: #dbeafe; color: #1e40af; }
+.badge-pending { background: #fef3c7; color: #92400e; }
+.badge-confirmed { background: #e0f2fe; color: #0369a1; }
+.badge-delivered { background: #d1fae5; color: #065f46; }
+
+/* ── CTA ── */
+.cta-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+}
+
+.btn-primary {
+    padding: 0.7rem 1.5rem;
+    background: #1a3a2a;
+    color: #fff;
+    border-radius: 8px;
+    font-weight: 700;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: filter 0.15s;
+}
+
+.btn-primary:hover { filter: brightness(1.2); }
+
+.btn-secondary {
+    padding: 0.7rem 1.5rem;
+    background: #f0f0f0;
+    color: #555;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: background 0.15s;
+}
+
+.btn-secondary:hover { background: #e5e5e5; }
+
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h1>Order Confirmed</h1>
+    <p>Order #{{ order.id }}</p>
+</div>
+
+<!-- Success banner -->
+<div class="success-banner">
+    <span class="icon">✅</span>
+    <div>
+        <h2>Payment successful!</h2>
+        <p>Your order has been placed. Confirmation sent to {{ order.customer.email }}.</p>
+    </div>
+</div>
+
+<div class="confirmation-layout">
+
+    <!-- Left: Items by producer (S3-002 breakdown) -->
+    <div>
+        <div class="card">
+            <h3>Items Ordered</h3>
+            {% for producer_name, group in producer_breakdown.items %}
+            <div class="producer-section">
+                <p class="producer-label">{{ producer_name }}</p>
+                {% for item in group.items %}
+                <div class="item-row">
+                    <div class="item-left">
+                        <span class="item-name">{{ item.product.name }}</span>
+                        <span class="item-qty">× {{ item.quantity }} @ £{{ item.unit_price }}</span>
+                    </div>
+                    <span class="item-price">£{{ item.unit_price|floatformat:2 }}</span>
+                </div>
+                {% endfor %}
+                <div class="producer-subtotal">
+                    <span>{{ producer_name }} subtotal</span>
+                    <span>£{{ group.subtotal|floatformat:2 }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="card">
+            <h3>Delivery Details</h3>
+            <div class="summary-row">
+                <span>Delivery address</span>
+                <span style="text-align:right;max-width:200px;">{{ order.delivery_address }}</span>
+            </div>
+            <div class="summary-row">
+                <span>Delivery date</span>
+                <span>{{ order.delivery_date|date:"l, d M Y" }}</span>
+            </div>
+            <div class="summary-row">
+                <span>Order status</span>
+                <span><span class="badge badge-{{ order.status }}">{{ order.get_status_display }}</span></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Payment summary -->
+    <div class="card">
+        <h3>Payment Summary</h3>
+        <div class="summary-row">
+            <span>Subtotal</span>
+            <span>£{{ order.total_price|floatformat:2 }}</span>
+        </div>
+        <div class="summary-row" style="font-size:0.82rem;color:#888;">
+            <span>Platform commission (5%)</span>
+            <span>£{{ order.commission_amount|floatformat:2 }}</span>
+        </div>
+        <div class="summary-row total">
+            <span>Total paid</span>
+            <span>£{{ order.total_price|floatformat:2 }}</span>
+        </div>
+
+        <div style="background:#f0fdf4;border-radius:8px;padding:0.75rem;font-size:0.8rem;color:#166534;margin-top:1rem;line-height:1.5;">
+            🌾 Your order supports {{ producer_breakdown|length }} local Bristol producer{{ producer_breakdown|length|pluralize }}.
+        </div>
+    </div>
+
+</div>
+
+<div class="cta-row">
+    <a href="{% url 'order_history' %}" class="btn-primary">View All Orders</a>
+    <a href="{% url 'product_list' %}" class="btn-secondary">Continue Shopping</a>
+</div>
+
+{% endblock %}

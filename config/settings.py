@@ -94,6 +94,11 @@ DEFAULT_FROM_EMAIL = 'Bristol Food Network <noreply@bristolfoodnetwork.co.uk>'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Stripe — set these in your environment or .env file
+# Get test keys from https://dashboard.stripe.com/test/apikeys
+STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', '')
+STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',

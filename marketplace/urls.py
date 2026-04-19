@@ -29,7 +29,14 @@ urlpatterns = [
     path('cart/remove/<int:pk>/', views.cart_remove, name='cart_remove'),
     path('cart/update/<int:pk>/', views.cart_update, name='cart_update'),
     path('checkout/', views.checkout, name='checkout'),
+    path('checkout/payment/', views.payment, name='payment'),
+    path('checkout/complete/', views.checkout_complete, name='checkout_complete'),
     path('orders/history/', views.order_history, name='order_history'),
+    path('orders/<int:pk>/confirmation/', views.order_confirmation, name='order_confirmation'),
+
+    # Producer payments
+    path('producer/payments/', views.producer_payments, name='producer_payments'),
+    path('producer/payments/export/', views.producer_payments_export, name='producer_payments_export'),
 
     # Account settings
     path('account/settings/', views.account_settings, name='account_settings'),

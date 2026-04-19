@@ -350,19 +350,26 @@
     <div class="order-summary">
         <h2>Order Summary</h2>
 
+        {% for producer_name, group in cart_by_producer.items %}
+        <p style="font-size:0.75rem;font-weight:700;color:#52b788;text-transform:uppercase;letter-spacing:0.06em;margin:0.75rem 0 0.4rem;">
+            {{ producer_name }}
+        </p>
         <div class="summary-items">
-            {% for product_id, item in cart.items %}
+            {% for item in group.items %}
             <div class="summary-item">
                 <div>
                     <p class="summary-item-name">{{ item.name }}</p>
-                    <p class="summary-item-qty">{{ item.producer }} · Qty: {{ item.quantity }}</p>
+                    <p class="summary-item-qty">Qty: {{ item.quantity }}</p>
                 </div>
-                <span class="summary-item-price">
-                    £{{ item.subtotal|default:item.price|floatformat:2 }}
-                </span>
+                <span class="summary-item-price">£{{ item.subtotal|floatformat:2 }}</span>
             </div>
             {% endfor %}
         </div>
+        <div class="summary-row" style="font-size:0.82rem;color:#555;padding-bottom:0.5rem;border-bottom:1px solid #f0f0f0;margin-bottom:0.5rem;">
+            <span>{{ producer_name }} subtotal</span>
+            <span>£{{ group.subtotal|floatformat:2 }}</span>
+        </div>
+        {% endfor %}
 
         <hr class="summary-divider">
 
@@ -372,10 +379,10 @@
         </div>
         <div class="summary-row commission">
             <span>Platform commission (5%)</span>
-            <span>£{% widthratio total 100 5 %}</span>
+            <span>£{{ commission|floatformat:2 }}</span>
         </div>
         <div class="summary-row total">
-            <span>Total</span>
+            <span>Total charged</span>
             <span>£{{ total|floatformat:2 }}</span>
         </div>
 
@@ -383,8 +390,8 @@
             🌾 Your order will be prepared by local Bristol producers with a minimum 48-hour lead time.
         </div>
 
-        <button type="submit" class="btn-place-order">Place Order →</button>
-        <p class="secure-note">🔒 Secure checkout</p>
+        <button type="submit" class="btn-place-order">Continue to Payment →</button>
+        <p class="secure-note">🔒 Secure payment via Stripe</p>
     </div>
 
 </div>

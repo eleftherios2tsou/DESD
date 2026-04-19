@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment — Bristol Food Network{% endblock %}
+
+{% block extra_css %}
+
+.breadcrumb {
+    font-size: 0.85rem;
+    color: #888;
+    margin-bottom: 1.5rem;
+}
+.breadcrumb a { color: #52b788; text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+.breadcrumb span { margin: 0 0.4rem; }
+
+.page-header { margin-bottom: 2rem; }
+.page-header h1 { font-size: 1.8rem; color: #1a3a2a; margin-bottom: 0.25rem; }
+.page-header p { color: #666; font-size: 0.95rem; }
+
+.payment-layout {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 2rem;
+    align-items: start;
+}
+
+@media (max-width: 720px) { .payment-layout { grid-template-columns: 1fr; } }
+
+.payment-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    padding: 2rem;
+}
+
+.payment-card h2 {
+    font-size: 1.15rem;
+    color: #1a3a2a;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+#payment-element {
+    margin-bottom: 1.5rem;
+}
+
+#payment-message {
+    color: #b91c1c;
+    background: #fee2e2;
+    border-left: 3px solid #e05252;
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    display: none;
+}
+
+.btn-pay {
+    width: 100%;
+    padding: 0.95rem;
+    background: #1a3a2a;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.15s;
+    box-shadow: 0 4px 12px rgba(26,58,42,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-pay:hover:not(:disabled) { filter: brightness(1.15); transform: translateY(-1px); }
+.btn-pay:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: none;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.secure-note {
+    text-align: center;
+    font-size: 0.78rem;
+    color: #aaa;
+    margin-top: 0.75rem;
+}
+
+.info-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    padding: 1.5rem;
+}
+
+.info-card h3 {
+    font-size: 1rem;
+    color: #1a3a2a;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.88rem;
+    color: #555;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid #f9f9f9;
+}
+
+.info-row:last-child { border-bottom: none; }
+.info-row .label { color: #888; }
+.info-row .value { font-weight: 600; color: #1a3a2a; }
+
+.test-card-note {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 0.85rem;
+    font-size: 0.8rem;
+    color: #166534;
+    margin-top: 1rem;
+    line-height: 1.6;
+}
+
+.test-card-note strong { display: block; margin-bottom: 0.25rem; }
+
+{% endblock %}
+
+{% block content %}
+
+<div class="breadcrumb">
+    <a href="{% url 'home' %}">Home</a>
+    <span>›</span>
+    <a href="{% url 'cart_view' %}">Cart</a>
+    <span>›</span>
+    <a href="{% url 'checkout' %}">Checkout</a>
+    <span>›</span>
+    Payment
+</div>
+
+<div class="page-header">
+    <h1>Secure Payment</h1>
+    <p>Complete your purchase with Stripe</p>
+</div>
+
+<div class="payment-layout">
+
+    <!-- Left: Stripe Elements -->
+    <div class="payment-card">
+        <h2>Card Details</h2>
+        <form id="payment-form">
+            <div id="payment-element"></div>
+            <div id="payment-message"></div>
+            <button id="submit-btn" class="btn-pay">
+                <div class="spinner" id="spinner"></div>
+                <span id="btn-text">Pay Now</span>
+            </button>
+            <p class="secure-note">🔒 Payments processed securely by Stripe</p>
+        </form>
+    </div>
+
+    <!-- Right: Info -->
+    <div class="info-card">
+        <h3>Order Details</h3>
+        <div class="info-row">
+            <span class="label">Delivery address</span>
+            <span class="value" style="text-align:right;max-width:180px;">{{ request.session.pending_checkout.delivery_address|default:"—" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="label">Delivery date</span>
+            <span class="value">{{ request.session.pending_checkout.delivery_date|default:"—" }}</span>
+        </div>
+
+        <div class="test-card-note">
+            <strong>Test mode — use these card details:</strong>
+            Card number: 4242 4242 4242 4242<br>
+            Expiry: any future date · CVC: any 3 digits
+        </div>
+    </div>
+
+</div>
+
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+    const stripe = Stripe('{{ publishable_key }}');
+    const appearance = {
+        theme: 'stripe',
+        variables: {
+            colorPrimary: '#1a3a2a',
+            colorBackground: '#fafafa',
+            colorText: '#333',
+            borderRadius: '8px',
+            fontFamily: 'Arial, sans-serif',
+        }
+    };
+
+    const elements = stripe.elements({
+        clientSecret: '{{ client_secret }}',
+        appearance,
+    });
+
+    const paymentElement = elements.create('payment');
+    paymentElement.mount('#payment-element');
+
+    const form = document.getElementById('payment-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const spinner = document.getElementById('spinner');
+    const btnText = document.getElementById('btn-text');
+    const messageDiv = document.getElementById('payment-message');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        submitBtn.disabled = true;
+        spinner.style.display = 'block';
+        btnText.textContent = 'Processing…';
+        messageDiv.style.display = 'none';
+
+        const { error } = await stripe.confirmPayment({
+            elements,
+            confirmParams: {
+                return_url: '{{ request.scheme }}://{{ request.get_host }}{% url "checkout_complete" %}',
+            },
+        });
+
+        // Only reached if confirmPayment fails immediately (e.g. card declined)
+        if (error) {
+            messageDiv.textContent = error.message;
+            messageDiv.style.display = 'block';
+            submitBtn.disabled = false;
+            spinner.style.display = 'none';
+            btnText.textContent = 'Pay Now';
+        }
+    });
+</script>
+
+{% endblock %}
