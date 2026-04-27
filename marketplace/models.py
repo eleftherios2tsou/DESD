@@ -62,6 +62,14 @@ class Product(models.Model):
     seasonal_months = models.CharField(
         max_length=200, blank=True, help_text='e.g. June, July, August'
     )
+    season_status_choices = [
+        ('in_season', 'In Season'),
+        ('out_of_season', 'Out of Season'),
+        ('coming_soon', 'Coming Soon'),
+    ]
+    season_status = models.CharField(max_length=20, choices=season_status_choices, default='in season',blank=True)
+    season_start = models.DateField(null=True, blank=True, help_text= 'When this product comes into season')
+    season_end = models.DateField(null=True, blank=True, help_text= 'When this product goes out of season')
     lead_time_hours = models.PositiveIntegerField(
         default=48, help_text='Minimum order lead time in hours'
     )

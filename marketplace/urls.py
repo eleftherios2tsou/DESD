@@ -17,6 +17,7 @@ urlpatterns = [
     path('dashboard/products/<int:pk>/delete/', views.product_delete, name='product_delete'),
     path('producer/orders/', views.producer_orders_management, name='producer_orders'),
     path('producer/orders/<int:pk>/update/', views.update_order_status, name='update_order_status'),
+    path('dashboard/products/<int:pk>/stock/', views.update_stock, name='update_stock'),
 
     # Producer public profile
     path('producers/<int:pk>/', views.producer_profile, name='producer_profile'),
@@ -33,6 +34,7 @@ urlpatterns = [
     path('checkout/complete/', views.checkout_complete, name='checkout_complete'),
     path('orders/history/', views.order_history, name='order_history'),
     path('orders/<int:pk>/confirmation/', views.order_confirmation, name='order_confirmation'),
+    path('orders/<int:pk>/reorder/', views.reorder, name='reorder'),
 
     # Producer payments
     path('producer/payments/', views.producer_payments, name='producer_payments'),

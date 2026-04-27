@@ -128,7 +128,20 @@ def product_delete(request, pk):
         messages.success(request, f'Product "{name}" deleted.')
         return redirect('dashboard')
     return render(request, 'marketplace/product_confirm_delete.html', {'product': product})
-
+@producer_required
+def update_stock(request, pk):
+    product = get_object_or_404(Product, pk=pk, producer=request.user.producer_profile)
+    if request.method == 'POST':
+        try:
+            new_stock = int(request.POST.get('stock', product.stock))
+            if new_stock < 0:
+                raise ValueError
+            product.stock = new_stock
+            product.save()
+            messages.success(request, f'Stock for "{product.name}" updated to {new_stock}.')
+        except ValueError:
+            messages.error(request, 'Please enter a valid non-negative integer for stock.')
+    return redirect('dashboard')
 def producer_profile(request, pk):
     profile = get_object_or_404(ProducerProfile, pk=pk)
     products = Product.objects.filter(producer=profile, is_active=True).order_by('-created_at')
@@ -136,7 +149,7 @@ def producer_profile(request, pk):
 
 
 def product_list(request):
-    products = Product.objects.filter(is_active=True).select_related('producer', 'category')
+    products = Product.objects.filter(is_active=True).exclude(season_status = 'out_of_season').select_related('producer', 'category')
 
     search = request.GET.get('search', '')
     category = request.GET.get('category', '')
@@ -498,8 +511,43 @@ def order_confirmation(request, pk):
 @customer_required
 def order_history(request):
     orders = Order.objects.filter(customer=request.user).order_by('-created_at')
+    
     return render(request, 'marketplace/order_history.html', {'orders': orders})
 
+@customer_required
+def reorder(request,pk):
+    order = get_object_or_404(Order, pk=pk, customer=request.user)
+    cart = request.session.get('cart', {})
+    unavailable = []
+
+    for item in order.items.all():
+        product = item.product
+        if product is None or not product.is_active or product.stock == 0:
+            unavailable.append(item.product.name if product else 'Deleted product')
+            continue
+
+        pid = str(product.id)
+        qty = min(item.quantity, product.stock)
+
+        if pid in cart:
+            cart[pid]['quantity'] += qty
+            cart[pid]['subtotal'] = float(cart[pid]['price']) * cart[pid]['quantity']
+        else:
+            cart[pid] = {
+                'name': product.name,
+                'price': str(product.price),
+                'quantity': qty,
+                'producer': product.producer.business_name,
+                'subtotal': float(product.price) * qty,
+            }
+    request.session['cart'] = cart
+    request.session.modified = True
+
+    if unavailable:
+        messages.warning(request, f'Some items were unavailable and not added to cart: {", ".join(unavailable)}')
+
+    messages.success(request, 'Order items added to cart. Please review your cart before checkout.')
+    return redirect('cart_view')
 
 @producer_required
 def producer_payments(request):

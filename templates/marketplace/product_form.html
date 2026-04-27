@@ -125,6 +125,11 @@
 {% endblock %}
 
 {% block content %}
+{% if form.errors %}
+    <div style="background:#fee2e2; padding:1rem; border-radius:8px; margin-bottom:1rem;">
+        {{ form.errors }}
+    </div>
+{% endif %}
 <div class="form-card">
     <a href="{% url 'dashboard' %}" class="back-link">← Back to dashboard</a>
     <h1>{{ action }} Product</h1>
@@ -165,10 +170,12 @@
         <p class="form-section-title">Dates & Availability</p>
         {{ form.harvest_date.label_tag }} {{ form.harvest_date }} {{ form.harvest_date.errors }}
         {{ form.best_before.label_tag }} {{ form.best_before }} {{ form.best_before.errors }}
-        {{ form.is_seasonal.label_tag }} {{ form.is_seasonal }} {{ form.is_seasonal.errors }}
         {{ form.seasonal_months.label_tag }} {{ form.seasonal_months }}
         <p class="helptext">{{ form.seasonal_months.help_text }}</p>
         {{ form.seasonal_months.errors }}
+        {{ form.season_status.label_tag }} {{ form.season_status }} {{ form.season_status.errors }}
+        {{ form.season_start.label_tag }} {{ form.season_start }} {{ form.season_start.errors }}
+        {{ form.season_end.label_tag }} {{ form.season_end }} {{ form.season_end.errors }}
         {{ form.lead_time_hours.label_tag }} {{ form.lead_time_hours }}
         <p class="helptext">{{ form.lead_time_hours.help_text }}</p>
         {{ form.lead_time_hours.errors }}
