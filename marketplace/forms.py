@@ -55,6 +55,7 @@ class ProductForm(forms.ModelForm):
             'name', 'category', 'description', 'price', 'stock',
             'allergens', 'is_organic', 'harvest_date', 'best_before',
             'farm_origin', 'is_seasonal', 'seasonal_months',
+            'season_status', 'season_start', 'season_end',
             'lead_time_hours', 'is_active', 'image',
         ]
         widgets = {
@@ -62,6 +63,8 @@ class ProductForm(forms.ModelForm):
             'best_before': forms.DateInput(attrs={'type': 'date'}),
             'description': forms.Textarea(attrs={'rows': 4}),
             'allergens': forms.Textarea(attrs={'rows': 2}),
+            'season_start': forms.DateInput(attrs={'type': 'date'}),
+            'season_end': forms.DateInput(attrs={'type': 'date'}),
         }
 class AccountSettingsForm(forms.ModelForm):
     new_password1 = forms.CharField(
