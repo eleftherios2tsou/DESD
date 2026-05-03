@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.contrib.auth.forms import UserCreationForm
 from django import forms
 from .models import CustomUser, Product, ProducerProfile
@@ -47,6 +49,48 @@ class ProducerRegistrationForm(UserCreationForm):
             raise forms.ValidationError('An account with this email already exists.')
         return email
 
+class CommunityGroupRegistrationForm(UserCreationForm):
+    email = forms.EmailField(required=True)
+    organisation_name = forms.CharField(max_length=200, help_text='Your community group or organisation name')
+    address = forms.CharField(widget=forms.Textarea(attrs={'rows':3}))
+    postcode = forms.CharField(max_length=10)
+
+    class Meta:
+        model = CustomUser
+        fields = ['username', 'email', 'password1', 'password2']
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if CustomUser.objects.filter(email=email).exclude(pk = self.instance.pk).exists():
+            raise forms.ValidationError('An account with this email already exists.')
+        return email
+    def save(self, commit = True) -> Any:
+        user = super().save(commit=False)
+        user.role = 'community_group'
+        if commit:
+            user.save()
+        return user
+    
+class RestaurantRegistrationForm(UserCreationForm):
+    email = forms.EmailField(required=True)
+    restaurant_name = forms.CharField(max_length=200, help_text='Your restaurant name')
+    address = forms.CharField(widget=forms.Textarea(attrs={'rows':3}))
+    postcode = forms.CharField(max_length=10)
+
+    class Meta:
+        model = CustomUser
+        fields = ['username', 'email', 'password1', 'password2']
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if CustomUser.objects.filter(email=email).exclude(pk = self.instance.pk).exists():
+            raise forms.ValidationError('An account with this email already exists.')
+    def save(self, commit = True):
+        user = super().save(commit=False)
+        user.role = 'restaurant'
+        if commit:
+            user.save()
+        return user
 
 class ProductForm(forms.ModelForm):
     class Meta:
@@ -56,7 +100,7 @@ class ProductForm(forms.ModelForm):
             'allergens', 'is_organic', 'harvest_date', 'best_before',
             'farm_origin', 'is_seasonal', 'seasonal_months',
             'season_status', 'season_start', 'season_end',
-            'lead_time_hours', 'is_active', 'image',
+            'lead_time_hours', 'is_active', 'is_discounted', 'sale_price','image',
         ]
         widgets = {
             'harvest_date': forms.DateInput(attrs={'type': 'date'}),
@@ -66,6 +110,20 @@ class ProductForm(forms.ModelForm):
             'season_start': forms.DateInput(attrs={'type': 'date'}),
             'season_end': forms.DateInput(attrs={'type': 'date'}),
         }
+
+        def clean(self):
+            cleaned_data = super().clean()
+            is_discounted = cleaned_data.get('is_discounted')
+            sale_price = cleaned_data.get('sale_price')
+            price = cleaned_data.get('price')
+
+            if is_discounted:
+                if not sale_price:
+                    self.add_error('sale_price', 'Please specify the sale price for this discounted product.')
+                if sale_price >= price:
+                    self.add_error('sale_price', 'Sale price must be lower than the original price.')
+
+            return cleaned_data
 class AccountSettingsForm(forms.ModelForm):
     new_password1 = forms.CharField(
         label='New password',
@@ -124,6 +182,10 @@ class CheckoutForm(forms.Form):
     postcode = forms.CharField(max_length=10)
     delivery_address = forms.CharField(widget=forms.Textarea(attrs={'rows': 3}))
     delivery_date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+    special_delivery_instructions = forms.CharField(
+        widget=forms.Textarea(attrs={'rows': 3, 'placeholder': 'e.g. Deliver to kitchen entrance, contact manager on arrival'}),
+        required=False,
+)
 
     def clean_delivery_date(self):
         delivery_date = self.cleaned_data.get('delivery_date')

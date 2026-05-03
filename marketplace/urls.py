@@ -9,6 +9,9 @@ urlpatterns = [
     path('register/producer/', views.register_producer, name='register_producer'),
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
+    path('register/community/', views.community_register, name='community_register'),
+    path('register/restaurant/', views.restaurant_register, name='restaurant_register'),
+    path('weekly-order/', views.weekly_order_template, name='weekly_order_template'),
 
     # Producer dashboard & product CRUD
     path('dashboard/', views.producer_dashboard, name='dashboard'),

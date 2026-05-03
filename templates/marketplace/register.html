@@ -26,6 +26,7 @@
                 {% endfor %}
             {% endif %}
 
+
             <form method="post" novalidate>
                 {% csrf_token %}
                 {{ form.as_p }}
@@ -35,6 +36,7 @@
 
         <p class="register-footer">
             Are you a producer? <a href="{% url 'register_producer' %}">Register your farm</a><br>
+            Want to register as community group or restaurant/cafe? <a href="{% url 'community_register' %}">Register a community group</a> or <a href="{% url 'restaurant_register' %}">Register a restaurant</a><br>
             Already have an account? <a href="{% url 'login' %}">Log in</a>
         </p>
 

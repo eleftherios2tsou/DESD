@@ -338,6 +338,16 @@
                         <span class="field-error">{{ form.delivery_date.errors.0 }}</span>
                     {% endif %}
                 </div>
+                {% if request.user.role == 'community_group' %}
+                <div class="form-section">
+                    <h3>Special Delivery Instructions</h3>
+                    <div class="form-group">
+                        <label for="id_special_delivery_instructions">Instructions</label>
+                        {{ form.special_delivery_instructions }}
+                        {{ form.special_delivery_instructions.errors }}
+                    </div>
+                </div>
+                {% endif %}
             </div>
             <p style="font-size:0.8rem; color:#888; margin-top:0.25rem;">
                 ⏱ Minimum 48 hours lead time required for all orders.
