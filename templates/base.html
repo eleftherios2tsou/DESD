@@ -120,6 +120,15 @@
             border-left: 3px solid #e05252;
             color: #b91c1c;
         }
+        .message-warning {
+        background: #fef3c7;
+        border-left: 3px solid #f59e0b;
+        color: #92400e;
+        padding: 0.8rem 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+        }
 
         /* ── FOOTER ── */
         footer {
@@ -222,6 +231,14 @@
             {% if request.user.role == 'customer' %}
                 <a href="{% url 'order_history' %}">My Orders</a>
                 <a href="{% url 'cart_view' %}">Cart</a>
+            {% elif request.user.role == 'community_group' %}
+                <a href="{% url 'order_history' %}">My Orders</a>
+                <a href="{% url 'cart_view' %}">Cart</a>
+            {% elif request.user.role == 'restaurant' %}
+                <a href="{% url 'order_history' %}">My Orders</a>
+                <a href="{% url 'weekly_order_template' %}">Weekly Order</a>
+                <a href="{% url 'cart_view' %}">Cart</a>    
+            
             {% endif %}
             <a href="{% url 'account_settings' %}">{{ request.user.username }}</a>
             <a href="{% url 'logout' %}" class="btn-login">Logout</a>

@@ -40,3 +40,29 @@ def customer_required(view_func):
             return redirect('home')
         return view_func(request, *args, **kwargs)
     return wrapper
+
+def community_group_required(view_func):
+    """Allow only users with the 'community_group' role."""
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            messages.error(request, 'Please log in to access this page.')
+            return redirect('login')
+        if request.user.role != 'community_group':
+            messages.error(request, 'Access denied. A community group account is required.')
+            return redirect('home')
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+def restaurant_required(view_func):
+    """Allow only users with the 'restaurant' role."""
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            messages.error(request, 'Please log in to access this page.')
+            return redirect('login')
+        if request.user.role != 'restaurant':
+            messages.error(request, 'Access denied. A restaurant account is required.')
+            return redirect('home')
+        return view_func(request, *args, **kwargs)
+    return wrapper

@@ -1,0 +1,339 @@
+{% extends 'base.html' %}
+
+{% block title %}Weekly Order Template — Bristol Food Network{% endblock %}
+
+{% block extra_css %}
+
+.page-header {
+    margin-bottom: 2rem;
+}
+
+.page-header h1 {
+    font-size: 1.8rem;
+    color: #1a3a2a;
+    margin-bottom: 0.25rem;
+}
+
+.page-header p { color: #666; font-size: 0.95rem; }
+
+/* ── Alert ── */
+.alert {
+    padding: 0.85rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.25rem;
+    font-size: 0.9rem;
+}
+.alert-success { background: #d1fae5; border-left: 3px solid #52b788; color: #065f46; }
+.alert-error { background: #fee2e2; border-left: 3px solid #e05252; color: #b91c1c; }
+
+/* ── Layout ── */
+.template-layout {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 2rem;
+    align-items: start;
+}
+
+@media (max-width: 768px) {
+    .template-layout { grid-template-columns: 1fr; }
+}
+
+/* ── Card ── */
+.card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    overflow: hidden;
+}
+
+.card-header {
+    padding: 1rem 1.5rem;
+    background: #f8fdf9;
+    border-bottom: 1px solid #e8f5ee;
+}
+
+.card-header h2 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #1a3a2a;
+    margin: 0;
+}
+
+.card-header p {
+    font-size: 0.82rem;
+    color: #888;
+    margin: 0.15rem 0 0;
+}
+
+.card-body { padding: 1.5rem; }
+
+/* ── Template Items ── */
+.template-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f5f5f5;
+    gap: 0.75rem;
+}
+
+.template-item:last-child { border-bottom: none; }
+
+.template-item-info { flex: 1; }
+
+.template-item-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #1a3a2a;
+}
+
+.template-item-producer {
+    font-size: 0.78rem;
+    color: #888;
+}
+
+.template-item-qty {
+    font-size: 0.85rem;
+    color: #555;
+    font-weight: 500;
+    min-width: 50px;
+    text-align: center;
+}
+
+.template-item-price {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #2d6a4f;
+    min-width: 65px;
+    text-align: right;
+}
+
+.btn-remove {
+    background: none;
+    border: none;
+    color: #b91c1c;
+    font-size: 0.82rem;
+    cursor: pointer;
+    padding: 0.3rem 0.5rem;
+    border-radius: 4px;
+}
+
+.btn-remove:hover { background: #fee2e2; }
+
+/* ── Add Product Form ── */
+.add-form {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.add-form select,
+.add-form input {
+    padding: 0.55rem 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: #333;
+    background: #fafafa;
+    outline: none;
+}
+
+.add-form select { flex: 1; min-width: 180px; }
+.add-form input[type="number"] { width: 70px; text-align: center; }
+
+.add-form select:focus,
+.add-form input:focus {
+    border-color: #52b788;
+    box-shadow: 0 0 0 2px rgba(82,183,136,0.12);
+}
+
+.btn-add {
+    padding: 0.55rem 1rem;
+    background: #52b788;
+    color: #1a3a2a;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: filter 0.15s;
+    white-space: nowrap;
+}
+
+.btn-add:hover { filter: brightness(1.08); }
+
+/* ── Summary ── */
+.summary-card {
+    position: sticky;
+    top: 1.5rem;
+}
+
+.summary-total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1a3a2a;
+    padding-top: 1rem;
+    border-top: 2px solid #1a3a2a;
+    margin-top: 1rem;
+}
+
+.summary-total span:last-child { color: #2d6a4f; }
+
+.btn-to-cart {
+    width: 100%;
+    padding: 0.85rem;
+    background: #1a3a2a;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 1.25rem;
+    transition: filter 0.15s;
+    box-shadow: 0 4px 12px rgba(26,58,42,0.25);
+}
+
+.btn-to-cart:hover { filter: brightness(1.15); }
+
+.template-note {
+    background: #f0fdf4;
+    border-radius: 8px;
+    padding: 0.75rem;
+    font-size: 0.8rem;
+    color: #166534;
+    margin-top: 0.75rem;
+    line-height: 1.5;
+}
+
+/* ── Empty State ── */
+.empty-template {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: #aaa;
+    font-size: 0.95rem;
+}
+
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h1>Weekly Order Template</h1>
+    <p>Save your regular weekly order — add it to your cart with one click each week</p>
+</div>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert {% if message.tags == 'error' %}alert-error{% else %}alert-success{% endif %}">
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
+
+<div class="template-layout">
+
+    <!-- Left: Template Items + Add Form -->
+    <div>
+        <!-- Current Template -->
+        <div class="card" style="margin-bottom:1.5rem;">
+            <div class="card-header">
+                <h2>{{ template.name }}</h2>
+                <p>Products you order every week</p>
+            </div>
+            <div class="card-body">
+                {% if items %}
+                    {% for item in items %}
+                    <div class="template-item">
+                        <div class="template-item-info">
+                            <p class="template-item-name">{{ item.product.name }}</p>
+                            <p class="template-item-producer">{{ item.product.producer.business_name }}</p>
+                        </div>
+                        <span class="template-item-qty">× {{ item.quantity }}</span>
+                        <span class="template-item-price">£{{ item.product.price }}</span>
+                        <form method="post" style="margin:0;">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="remove">
+                            <input type="hidden" name="item_id" value="{{ item.pk }}">
+                            <button type="submit" class="btn-remove">✕ Remove</button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-template">
+                        Your weekly template is empty. Add products below to get started.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Add Product -->
+        <div class="card">
+            <div class="card-header">
+                <h2>Add Product to Template</h2>
+            </div>
+            <div class="card-body">
+                <form method="post" class="add-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add">
+                    <select name="product_id" required>
+                        <option value="">Select a product...</option>
+                        {% for product in products %}
+                            <option value="{{ product.pk }}">{{ product.name }} — £{{ product.price }} ({{ product.producer.business_name }})</option>
+                        {% endfor %}
+                    </select>
+                    <input type="number" name="quantity" value="1" min="1" required>
+                    <button type="submit" class="btn-add">+ Add</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Summary -->
+    <div class="card summary-card">
+        <div class="card-header">
+            <h2>Template Summary</h2>
+        </div>
+        <div class="card-body">
+            {% if items %}
+                {% for item in items %}
+                <div style="display:flex; justify-content:space-between; font-size:0.85rem; padding:0.4rem 0; border-bottom:1px solid #f5f5f5; color:#555;">
+                    <span>{{ item.product.name }} × {{ item.quantity }}</span>
+                    <span style="color:#2d6a4f; font-weight:600;">£{{ item.product.price }}</span>
+                </div>
+                {% endfor %}
+
+                <div class="summary-total">
+                    <span>Estimated Total</span>
+                    <span>
+                        £{% widthratio 1 1 0 as total %}
+                        {% for item in items %}
+                            <!-- Note: exact total calculated server-side at checkout -->
+                        {% endfor %}
+                        —
+                    </span>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="to_cart">
+                    <button type="submit" class="btn-to-cart">🛒 Add All to Cart</button>
+                </form>
+
+                <div class="template-note">
+                    🔄 Use this template each week — click "Add All to Cart" and proceed to checkout as usual. Product availability and prices are checked at checkout.
+                </div>
+            {% else %}
+                <p style="text-align:center; color:#aaa; padding:1.5rem 0; font-size:0.9rem;">
+                    Add products to see your weekly summary.
+                </p>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
