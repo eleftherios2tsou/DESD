@@ -63,18 +63,33 @@ def register_producer(request):
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('home')
+
+    lockout_msg = None
+
     if request.method == 'POST':
-        form = AuthenticationForm(request, data=request.POST)
-        if form.is_valid():
-            user = form.get_user()
-            auth_login(request, user)
-            if user.role == 'producer':
-                return redirect('dashboard')
-            return redirect('home')
-        # form is invalid — errors will be shown in template
+        from django.core.cache import cache
+        username = request.POST.get('username', '').strip()
+        cache_key = f'login_attempts_{username}'
+        attempts = cache.get(cache_key, 0)
+
+        if attempts >= 5:
+            lockout_msg = 'Account temporarily locked after 5 failed attempts. Please try again in 15 minutes.'
+            form = AuthenticationForm()
+        else:
+            form = AuthenticationForm(request, data=request.POST)
+            if form.is_valid():
+                cache.delete(cache_key)
+                user = form.get_user()
+                auth_login(request, user)
+                if user.role == 'producer':
+                    return redirect('dashboard')
+                return redirect('home')
+            else:
+                cache.set(cache_key, attempts + 1, 900)  # lock for 15 minutes
     else:
         form = AuthenticationForm()
-    return render(request, 'marketplace/login.html', {'form': form})
+
+    return render(request, 'marketplace/login.html', {'form': form, 'lockout_msg': lockout_msg})
 
 
 def logout_view(request):
@@ -617,3 +632,18 @@ def submit_review(request,product_pk):
         'form': form,
         'product': product,
     })
+
+
+def delete_account(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    if request.method == 'POST':
+        if request.POST.get('confirm') == 'DELETE':
+            user = request.user
+            auth_logout(request)
+            user.delete()  # CASCADE removes orders, reviews, producer profile
+            messages.success(request, 'Your account and all personal data have been permanently deleted.')
+            return redirect('home')
+        messages.error(request, 'Please type DELETE exactly to confirm.')
+        return redirect('account_settings')
+    return redirect('account_settings')
