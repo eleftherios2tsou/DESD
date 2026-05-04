@@ -265,6 +265,11 @@
             </div>
             <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
                 <p class="cart-item-subtotal">£{{ item.subtotal|floatformat:2 }}</p>
+                {% if total_food_miles %}
+                <p style="font-size:0.85rem; color:#2d6a4f; margin-top:0.5rem;">
+                📍 Total food miles for this order: {{ total_food_miles }} miles
+                </p>
+                {% endif %}
                 <form method="post" action="{% url 'cart_update' product_id %}">
                     {% csrf_token %}
                     <input type="number" name="quantity" value="{{ item.quantity }}" min="1" class="qty-input">

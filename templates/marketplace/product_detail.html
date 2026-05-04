@@ -68,6 +68,7 @@
 .badge-coming { background: #e0f2fe; color: #0369a1; }
 .badge-out { background: #fee2e2; color: #b91c1c; }
 
+
 .product-name {
     font-size: 1.9rem;
     font-weight: 700;
@@ -374,6 +375,9 @@
             {% if product.stock == 0 %}
                 <span class="badge badge-out">Out of Stock</span>
             {% endif %}
+            {% if product.is_discounted %}
+                <span class="badge badge-sale">🏷 Sale</span>
+            {% endif %}
         </div>
 
         <h1 class="product-name">{{ product.name }}</h1>
@@ -382,6 +386,11 @@
             From <strong><a href="{% url 'producer_profile' product.producer.pk %}" style="color:#2d6a4f;text-decoration:none;">{{ product.producer.business_name }}</a></strong>
             {% if product.farm_origin %} · {{ product.farm_origin }}{% endif %}
         </p>
+        {% if food_distance %}
+        <p style="font-size:0.85rem; color:#2d6a4f; background:#e8f5ee; display:inline-block; padding:0.2rem 0.65rem; border-radius:6px;">
+        📍 {{ food_distance }} miles from you
+        </p>
+        {% endif %}
 
         <!-- Inline avg rating -->
         {% if avg_rating %}
@@ -391,7 +400,14 @@
         </div>
         {% endif %}
 
-        <p class="product-price">£{{ product.price }}</p>
+        {% if product.is_discounted and product.sale_price %}
+            <p class="product-price">
+                <span style="text-decoration:line-through; color:#aaa; font-size:1.2rem;">£{{ product.price }}</span>
+                £{{ product.sale_price }}
+            </p>
+        {% else %}
+            <p class="product-price">£{{ product.price }}</p>
+        {% endif %}
 
         <p class="product-description">{{ product.description }}</p>
 
@@ -437,7 +453,7 @@
         {% endif %}
 
         <!-- Add to Cart -->
-        {% if request.user.is_authenticated and request.user.role == 'customer' %}
+        {% if request.user.is_authenticated and request.user.role != 'producer' %}
         <div class="cart-section">
             <form method="post" action="{% url 'cart_add' product.pk %}">
                 {% csrf_token %}

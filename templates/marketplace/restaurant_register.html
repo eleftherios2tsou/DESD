@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+
+{% block title %}Restaurant Registration — Bristol Food Network{% endblock %}
+
+{% block extra_css %}
+
+.register-wrapper {
+    max-width: 520px;
+    margin: 0 auto;
+}
+
+.register-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    overflow: hidden;
+}
+
+.register-card-header {
+    background: #1a3a2a;
+    padding: 1.75rem 2rem;
+    color: #fff;
+}
+
+.register-card-header h1 {
+    font-size: 1.4rem;
+    margin: 0 0 0.3rem;
+}
+
+.register-card-header p {
+    font-size: 0.88rem;
+    color: rgba(255,255,255,0.7);
+    margin: 0;
+}
+
+.register-card-body { padding: 2rem; }
+
+.form-group {
+    margin-bottom: 1.15rem;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.35rem;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 0.6rem 0.85rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #333;
+    background: #fafafa;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    border-color: #52b788;
+    box-shadow: 0 0 0 2px rgba(82,183,136,0.12);
+    background: #fff;
+}
+
+.form-group textarea { resize: vertical; }
+
+.help-text {
+    font-size: 0.75rem;
+    color: #aaa;
+    margin-top: 0.25rem;
+}
+
+.field-error {
+    font-size: 0.78rem;
+    color: #e05252;
+    margin-top: 0.25rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.divider {
+    border: none;
+    border-top: 1px solid #f0f0f0;
+    margin: 1.25rem 0;
+}
+
+.btn-register {
+    width: 100%;
+    padding: 0.75rem;
+    background: #52b788;
+    color: #1a3a2a;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 0.5rem;
+    transition: filter 0.15s;
+}
+
+.btn-register:hover { filter: brightness(1.08); }
+
+.login-link {
+    text-align: center;
+    margin-top: 1.25rem;
+    font-size: 0.88rem;
+    color: #888;
+}
+
+.login-link a { color: #52b788; text-decoration: none; font-weight: 600; }
+.login-link a:hover { text-decoration: underline; }
+
+{% endblock %}
+
+{% block content %}
+<div class="register-wrapper">
+    <div class="register-card">
+        <div class="register-card-header">
+            <h1>🍽 Restaurant Registration</h1>
+            <p>Register your restaurant or café to source local ingredients with recurring orders</p>
+        </div>
+        <div class="register-card-body">
+
+            {% if form.errors %}
+            <div style="background:#fee2e2; padding:0.85rem 1rem; border-radius:8px; margin-bottom:1rem; font-size:0.85rem; color:#b91c1c;">
+                Please correct the errors below.
+            </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label for="{{ form.restaurant_name.id_for_label }}">Restaurant / Café Name</label>
+                    {{ form.restaurant_name }}
+                    <p class="help-text">{{ form.restaurant_name.help_text }}</p>
+                    {% for error in form.restaurant_name.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.username.id_for_label }}">Username</label>
+                        {{ form.username }}
+                        {% for error in form.username.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.email.id_for_label }}">Email</label>
+                        {{ form.email }}
+                        {% for error in form.email.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.address.id_for_label }}">Address</label>
+                    {{ form.address }}
+                    {% for error in form.address.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.postcode.id_for_label }}">Postcode</label>
+                    {{ form.postcode }}
+                    {% for error in form.postcode.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                </div>
+
+                <hr class="divider">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.password1.id_for_label }}">Password</label>
+                        {{ form.password1 }}
+                        {% for error in form.password1.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.password2.id_for_label }}">Confirm Password</label>
+                        {{ form.password2 }}
+                        {% for error in form.password2.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-register">Create Restaurant Account</button>
+            </form>
+
+            <p class="login-link">Already have an account? <a href="{% url 'login' %}">Log in</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

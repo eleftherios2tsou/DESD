@@ -73,6 +73,8 @@ class Product(models.Model):
     lead_time_hours = models.PositiveIntegerField(
         default=48, help_text='Minimum order lead time in hours'
     )
+    is_discounted = models.BooleanField(default=False)
+    sale_price = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     image = models.ImageField(upload_to='products/', blank=True, null=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -120,4 +122,23 @@ class Review(models.Model):
 
     def __str__(self):
         return f"Review by {self.customer.username} for {self.product.name}"
+    
+class WeeklyOrderTemplate(models.Model):
+    customer = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='weekly_order_templates')
+    name = models.CharField(max_length=200, default='My Weekly Order')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.customer.username}"
+    
+class WeeklyOrderItem(models.Model):
+    template = models.ForeignKey(WeeklyOrderTemplate, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete =models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+
+    def __str__(self):
+        return f"{self.quantity} x {self.product.name} in {self.template.name}"
+
+
 
