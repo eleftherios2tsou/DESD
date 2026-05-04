@@ -251,4 +251,39 @@
 </div>
 </form>
 
+<!-- Danger Zone -->
+<div style="margin-top:3rem; background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); padding:1.5rem; border-top:3px solid #e05252;">
+    <h2 style="font-size:1rem; color:#b91c1c; font-weight:700; margin-bottom:0.5rem;">Danger Zone</h2>
+    <p style="font-size:0.88rem; color:#666; margin-bottom:1rem;">
+        Permanently delete your account and all associated data (orders, reviews, profile). This action cannot be undone.
+    </p>
+    <button onclick="document.getElementById('delete-modal').style.display='flex'" style="padding:0.6rem 1.25rem; background:#b91c1c; color:#fff; border:none; border-radius:8px; font-size:0.9rem; font-weight:700; cursor:pointer;">
+        Delete My Account
+    </button>
+</div>
+
+<!-- Delete confirmation modal -->
+<div id="delete-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:999; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:12px; padding:2rem; max-width:420px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+        <h3 style="color:#b91c1c; font-size:1.1rem; margin-bottom:0.75rem;">Delete your account?</h3>
+        <p style="font-size:0.88rem; color:#555; margin-bottom:1.25rem; line-height:1.6;">
+            This will permanently delete your account, all orders, and all reviews. Type <strong>DELETE</strong> to confirm.
+        </p>
+        <form method="post" action="{% url 'delete_account' %}">
+            {% csrf_token %}
+            <input type="text" name="confirm" placeholder="Type DELETE here" required
+                style="width:100%; padding:0.7rem 0.9rem; border:1px solid #ddd; border-radius:8px; font-size:0.92rem; margin-bottom:1rem; font-family:inherit;">
+            <div style="display:flex; gap:0.75rem;">
+                <button type="submit" style="flex:1; padding:0.75rem; background:#b91c1c; color:#fff; border:none; border-radius:8px; font-weight:700; cursor:pointer;">
+                    Delete Permanently
+                </button>
+                <button type="button" onclick="document.getElementById('delete-modal').style.display='none'"
+                    style="flex:1; padding:0.75rem; background:#f0f0f0; color:#555; border:none; border-radius:8px; font-weight:600; cursor:pointer;">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 {% endblock %}

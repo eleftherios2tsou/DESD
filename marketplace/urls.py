@@ -38,7 +38,8 @@ urlpatterns = [
     path('producer/payments/', views.producer_payments, name='producer_payments'),
     path('producer/payments/export/', views.producer_payments_export, name='producer_payments_export'),
 
-    # Account settings
+    # Account settings & GDPR
     path('account/settings/', views.account_settings, name='account_settings'),
+    path('account/delete/', views.delete_account, name='delete_account'),
     path('products/<int:product_pk>/review/', views.submit_review, name='submit_review'),
 ]

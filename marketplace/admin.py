@@ -1,5 +1,9 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from django.db.models import Sum, Count
+from django.template.response import TemplateResponse
+from django.urls import path
+
 from .models import CustomUser, ProducerProfile, Category, Product, Order, OrderItem, Review
 
 
@@ -58,3 +62,47 @@ class ReviewAdmin(admin.ModelAdmin):
     list_display = ['product', 'customer', 'rating', 'created_at']
     list_filter = ['rating']
     search_fields = ['product__name', 'customer__username']
+
+
+# ── Marketplace Metrics — superuser-only custom admin view ──
+
+def marketplace_metrics_view(request):
+    context = {
+        **admin.site.each_context(request),
+        'title': 'Marketplace Metrics',
+        'customer_count': CustomUser.objects.filter(role='customer').count(),
+        'producer_count': CustomUser.objects.filter(role='producer').count(),
+        'product_count': Product.objects.filter(is_active=True).count(),
+        'order_count': Order.objects.count(),
+        'paid_order_count': Order.objects.filter(status__in=['paid', 'confirmed', 'delivered']).count(),
+        'commission_total': Order.objects.filter(
+            status__in=['paid', 'confirmed', 'delivered']
+        ).aggregate(total=Sum('commission_amount'))['total'] or 0,
+        'revenue_total': Order.objects.filter(
+            status__in=['paid', 'confirmed', 'delivered']
+        ).aggregate(total=Sum('total_price'))['total'] or 0,
+        'review_count': Review.objects.count(),
+        'orders_by_status': {
+            label: Order.objects.filter(status=value).count()
+            for value, label in Order.STATUS_CHOICES
+        },
+    }
+    return TemplateResponse(request, 'admin/marketplace_metrics.html', context)
+
+
+# Patch AdminSite to inject the custom URL
+_original_get_urls = admin.AdminSite.get_urls
+
+
+def _patched_get_urls(self):
+    custom = [
+        path(
+            'marketplace/metrics/',
+            self.admin_view(marketplace_metrics_view, cacheable=True),
+            name='marketplace_metrics',
+        ),
+    ]
+    return custom + _original_get_urls(self)
+
+
+admin.AdminSite.get_urls = _patched_get_urls
