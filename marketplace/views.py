@@ -256,7 +256,7 @@ def product_detail(request, pk):
         'product': product,
         'reviews': reviews,
         'avg_rating': avg_rating,
-        'food_miles': food_miles,
+        'food_distance': food_miles,
     })
 
 
@@ -362,7 +362,11 @@ def cart_view(request):
             except Product.DoesNotExist:
                 continue
     total = sum(float(item['price']) * item['quantity'] for item in cart.values())
-    return render(request, 'marketplace/cart.html', {'cart': cart, 'total': total})
+    return render(request, 'marketplace/cart.html', {
+        'cart': cart,
+        'total': total,
+        'total_food_miles': round(total_food_distance, 1) if total_food_distance else None,
+    })
 @customer_required
 def cart_update(request, pk):
     if request.method != 'POST':
@@ -620,13 +624,17 @@ def reorder(request,pk):
         pid = str(product.id)
         qty = min(item.quantity, product.stock)
 
+        effective_price = (
+            float(product.sale_price) if product.is_discounted and product.sale_price
+            else float(product.price)
+        )
         if pid in cart:
             cart[pid]['quantity'] += qty
             cart[pid]['subtotal'] = float(cart[pid]['price']) * cart[pid]['quantity']
         else:
             cart[pid] = {
                 'name': product.name,
-                'price': str(product.price),
+                'price': str(effective_price),
                 'quantity': qty,
                 'producer': product.producer.business_name,
                 'subtotal': effective_price * qty,

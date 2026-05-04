@@ -299,7 +299,7 @@
         </div>
         <div class="summary-row commission">
             <span>Platform commission (5%)</span>
-            <span>£{{ total|floatformat:2 }}</span>
+            <span>£{% widthratio total 100 5 %}</span>
         </div>
 
         <a href="{% url 'checkout' %}" class="btn-checkout">Proceed to Checkout →</a>
