@@ -100,7 +100,7 @@ class ProductForm(forms.ModelForm):
             'allergens', 'is_organic', 'harvest_date', 'best_before',
             'farm_origin', 'is_seasonal', 'seasonal_months',
             'season_status', 'season_start', 'season_end',
-            'lead_time_hours', 'is_active', 'is_discounted', 'sale_price','image',
+            'lead_time_hours', 'low_stock_threshold', 'is_active', 'is_discounted', 'sale_price', 'image',
         ]
         widgets = {
             'harvest_date': forms.DateInput(attrs={'type': 'date'}),

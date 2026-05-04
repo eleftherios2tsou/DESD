@@ -10,13 +10,35 @@ from django.contrib.auth import login as auth_login, logout as auth_logout, upda
 from django.contrib.auth.forms import AuthenticationForm
 from django.core.mail import send_mail
 from django.conf import settings
-from django.db.models import Avg, Q
+from django.db.models import Avg, F, Q
 from django.http import HttpResponse
 
 from .forms import RegistrationForm, ProducerRegistrationForm, ProductForm, CheckoutForm, AccountSettingsForm, ProducerProfileForm,ReviewForm, CommunityGroupRegistrationForm, RestaurantRegistrationForm
 from .models import ProducerProfile, Product, Category, Order, OrderItem, Review, WeeklyOrderItem,WeeklyOrderTemplate
 from .decorators import producer_required, customer_required, restaurant_required
 from.utils import calculate_food_distance
+
+def _send_low_stock_alert(product):
+    """Email the producer when a product's stock drops below its threshold."""
+    if product.stock >= product.low_stock_threshold:
+        return
+    producer = product.producer
+    if not producer.user.email:
+        return
+    send_mail(
+        subject=f'Low Stock Alert: {product.name}',
+        message=(
+            f"Hi {producer.business_name},\n\n"
+            f'Stock for "{product.name}" has fallen to {product.stock} unit(s), '
+            f'below your alert threshold of {product.low_stock_threshold}.\n\n'
+            f'Please update your stock from your producer dashboard.\n\n'
+            f'Bristol Food Network'
+        ),
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[producer.user.email],
+        fail_silently=True,
+    )
+
 
 def home(request):
     featured_products = Product.objects.filter(is_active=True).order_by('-created_at')[:6]
@@ -128,7 +150,12 @@ def logout_view(request):
 def producer_dashboard(request):
     profile, created = ProducerProfile.objects.get_or_create(user=request.user)
     products = Product.objects.filter(producer=profile).order_by('-created_at')
-    return render(request, 'marketplace/dashboard.html', {'products': products, 'profile': profile})
+    low_stock = products.filter(is_active=True, stock__lt=F('low_stock_threshold'))
+    return render(request, 'marketplace/dashboard.html', {
+        'products': products,
+        'profile': profile,
+        'low_stock_products': low_stock,
+    })
 
 
 @producer_required
@@ -491,6 +518,7 @@ def checkout_complete(request):
         )
         product.stock -= item['quantity']
         product.save()
+        _send_low_stock_alert(product)
 
     # Clear session
     request.session.pop('cart', None)
