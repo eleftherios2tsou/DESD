@@ -1,0 +1,16 @@
+{% extends "admin/base.html" %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">Bristol Food Network Admin</a>
+</h1>
+{% endblock %}
+
+{% block nav-global %}
+<div style="background:#1a3a2a; border-top:1px solid rgba(255,255,255,0.1); padding:0 1rem;">
+    <a href="/admin/marketplace/metrics/"
+       style="color:#52b788; font-size:0.82rem; font-weight:600; text-decoration:none; line-height:2.2rem; display:inline-block;">
+        📊 Marketplace Metrics
+    </a>
+</div>
+{% endblock %}

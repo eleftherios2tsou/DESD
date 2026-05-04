@@ -100,7 +100,7 @@ class ProductForm(forms.ModelForm):
             'allergens', 'is_organic', 'harvest_date', 'best_before',
             'farm_origin', 'is_seasonal', 'seasonal_months',
             'season_status', 'season_start', 'season_end',
-            'lead_time_hours', 'is_active', 'is_discounted', 'sale_price','image',
+            'lead_time_hours', 'low_stock_threshold', 'is_active', 'is_discounted', 'sale_price', 'image',
         ]
         widgets = {
             'harvest_date': forms.DateInput(attrs={'type': 'date'}),
@@ -111,19 +111,21 @@ class ProductForm(forms.ModelForm):
             'season_end': forms.DateInput(attrs={'type': 'date'}),
         }
 
-        def clean(self):
-            cleaned_data = super().clean()
-            is_discounted = cleaned_data.get('is_discounted')
-            sale_price = cleaned_data.get('sale_price')
-            price = cleaned_data.get('price')
+    def clean(self):
+        cleaned_data = super().clean()
+        is_discounted = cleaned_data.get('is_discounted')
+        sale_price = cleaned_data.get('sale_price')
+        price = cleaned_data.get('price')
 
-            if is_discounted:
-                if not sale_price:
-                    self.add_error('sale_price', 'Please specify the sale price for this discounted product.')
-                if sale_price >= price:
-                    self.add_error('sale_price', 'Sale price must be lower than the original price.')
+        if is_discounted:
+            if not sale_price:
+                self.add_error('sale_price', 'Please specify the sale price for this discounted product.')
+            elif sale_price and price and sale_price >= price:
+                self.add_error('sale_price', 'Sale price must be lower than the original price.')
 
-            return cleaned_data
+        return cleaned_data
+
+
 class AccountSettingsForm(forms.ModelForm):
     new_password1 = forms.CharField(
         label='New password',

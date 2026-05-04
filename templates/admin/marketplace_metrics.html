@@ -1,0 +1,140 @@
+{% extends "admin/base_site.html" %}
+
+{% block title %}Marketplace Metrics | Admin{% endblock %}
+
+{% block content %}
+<style>
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1.25rem;
+        margin-bottom: 2rem;
+    }
+
+    .metric-card {
+        background: #fff;
+        border-radius: 10px;
+        padding: 1.25rem 1.5rem;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        border-left: 4px solid #417690;
+    }
+
+    .metric-card.green  { border-left-color: #2d6a4f; }
+    .metric-card.amber  { border-left-color: #b45309; }
+    .metric-card.blue   { border-left-color: #1e40af; }
+
+    .metric-label {
+        font-size: 0.75rem;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-weight: 600;
+        margin-bottom: 0.4rem;
+    }
+
+    .metric-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1a3a2a;
+        line-height: 1;
+    }
+
+    .metric-value.currency::before { content: "£"; font-size: 1.2rem; }
+
+    .section-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1a3a2a;
+        margin: 2rem 0 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e5e5e5;
+    }
+
+    .status-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    .status-table th {
+        background: #f5f5f5;
+        padding: 0.75rem 1rem;
+        text-align: left;
+        font-size: 0.8rem;
+        color: #555;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .status-table td {
+        padding: 0.75rem 1rem;
+        border-top: 1px solid #f0f0f0;
+        font-size: 0.9rem;
+        color: #333;
+    }
+</style>
+
+<h1>Marketplace Metrics</h1>
+<p style="color:#888; margin-bottom:1.5rem; font-size:0.9rem;">Live overview — superuser only</p>
+
+<div class="metrics-grid">
+    <div class="metric-card">
+        <p class="metric-label">Customers</p>
+        <p class="metric-value">{{ customer_count }}</p>
+    </div>
+    <div class="metric-card green">
+        <p class="metric-label">Producers</p>
+        <p class="metric-value">{{ producer_count }}</p>
+    </div>
+    <div class="metric-card blue">
+        <p class="metric-label">Active Products</p>
+        <p class="metric-value">{{ product_count }}</p>
+    </div>
+    <div class="metric-card">
+        <p class="metric-label">Total Orders</p>
+        <p class="metric-value">{{ order_count }}</p>
+    </div>
+    <div class="metric-card green">
+        <p class="metric-label">Paid / Confirmed / Delivered</p>
+        <p class="metric-value">{{ paid_order_count }}</p>
+    </div>
+    <div class="metric-card amber">
+        <p class="metric-label">Commission Revenue</p>
+        <p class="metric-value currency">{{ commission_total|floatformat:2 }}</p>
+    </div>
+    <div class="metric-card blue">
+        <p class="metric-label">Gross Revenue</p>
+        <p class="metric-value currency">{{ revenue_total|floatformat:2 }}</p>
+    </div>
+    <div class="metric-card">
+        <p class="metric-label">Reviews Submitted</p>
+        <p class="metric-value">{{ review_count }}</p>
+    </div>
+</div>
+
+<p class="section-title">Orders by Status</p>
+<table class="status-table">
+    <thead>
+        <tr>
+            <th>Status</th>
+            <th>Count</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for status_label, count in orders_by_status.items %}
+        <tr>
+            <td>{{ status_label }}</td>
+            <td><strong>{{ count }}</strong></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<p style="margin-top:2rem;">
+    <a href="{% url 'admin:index' %}">&larr; Back to Admin</a>
+</p>
+
+{% endblock %}

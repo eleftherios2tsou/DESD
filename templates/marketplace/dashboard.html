@@ -119,6 +119,20 @@
     <a href="{% url 'product_create' %}" class="btn btn-primary">+ Add Product</a>
 </div>
 
+{% if low_stock_products %}
+<div style="background:#fef3c7; border-left:4px solid #d97706; border-radius:8px; padding:0.9rem 1.1rem; margin-bottom:1.25rem; font-size:0.9rem; color:#92400e;">
+    <strong>⚠ Low stock alert</strong> — the following products are running low and need restocking:
+    <ul style="margin:0.5rem 0 0 1.2rem; padding:0;">
+        {% for p in low_stock_products %}
+        <li>
+            <strong>{{ p.name }}</strong> — {{ p.stock }} unit{{ p.stock|pluralize }} left
+            (threshold: {{ p.low_stock_threshold }})
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
 {% if messages %}
     {% for message in messages %}
         <div class="alert {% if message.tags == 'error' %}alert-error{% else %}alert-success{% endif %}">

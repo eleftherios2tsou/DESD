@@ -497,7 +497,7 @@
             </div>
             {% endif %}
         </div>
-        {% if request.user.is_authenticated and request.user.role == 'customer' %}
+        {% if request.user.is_authenticated and request.user.role in 'customer,community_group,restaurant' %}
             <a href="{% url 'submit_review' product.pk %}" class="btn-review">✍ Write a Review</a>
         {% endif %}
     </div>

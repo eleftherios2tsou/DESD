@@ -10,13 +10,35 @@ from django.contrib.auth import login as auth_login, logout as auth_logout, upda
 from django.contrib.auth.forms import AuthenticationForm
 from django.core.mail import send_mail
 from django.conf import settings
-from django.db.models import Avg, Q
+from django.db.models import Avg, F, Q
 from django.http import HttpResponse
 
 from .forms import RegistrationForm, ProducerRegistrationForm, ProductForm, CheckoutForm, AccountSettingsForm, ProducerProfileForm,ReviewForm, CommunityGroupRegistrationForm, RestaurantRegistrationForm
 from .models import ProducerProfile, Product, Category, Order, OrderItem, Review, WeeklyOrderItem,WeeklyOrderTemplate
 from .decorators import producer_required, customer_required, restaurant_required
 from.utils import calculate_food_distance
+
+def _send_low_stock_alert(product):
+    """Email the producer when a product's stock drops below its threshold."""
+    if product.stock >= product.low_stock_threshold:
+        return
+    producer = product.producer
+    if not producer.user.email:
+        return
+    send_mail(
+        subject=f'Low Stock Alert: {product.name}',
+        message=(
+            f"Hi {producer.business_name},\n\n"
+            f'Stock for "{product.name}" has fallen to {product.stock} unit(s), '
+            f'below your alert threshold of {product.low_stock_threshold}.\n\n'
+            f'Please update your stock from your producer dashboard.\n\n'
+            f'Bristol Food Network'
+        ),
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[producer.user.email],
+        fail_silently=True,
+    )
+
 
 def home(request):
     featured_products = Product.objects.filter(is_active=True).order_by('-created_at')[:6]
@@ -89,18 +111,33 @@ def restaurant_register(request):
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('home')
+
+    lockout_msg = None
+
     if request.method == 'POST':
-        form = AuthenticationForm(request, data=request.POST)
-        if form.is_valid():
-            user = form.get_user()
-            auth_login(request, user)
-            if user.role == 'producer':
-                return redirect('dashboard')
-            return redirect('home')
-        # form is invalid — errors will be shown in template
+        from django.core.cache import cache
+        username = request.POST.get('username', '').strip()
+        cache_key = f'login_attempts_{username}'
+        attempts = cache.get(cache_key, 0)
+
+        if attempts >= 5:
+            lockout_msg = 'Account temporarily locked after 5 failed attempts. Please try again in 15 minutes.'
+            form = AuthenticationForm()
+        else:
+            form = AuthenticationForm(request, data=request.POST)
+            if form.is_valid():
+                cache.delete(cache_key)
+                user = form.get_user()
+                auth_login(request, user)
+                if user.role == 'producer':
+                    return redirect('dashboard')
+                return redirect('home')
+            else:
+                cache.set(cache_key, attempts + 1, 900)  # lock for 15 minutes
     else:
         form = AuthenticationForm()
-    return render(request, 'marketplace/login.html', {'form': form})
+
+    return render(request, 'marketplace/login.html', {'form': form, 'lockout_msg': lockout_msg})
 
 
 def logout_view(request):
@@ -113,7 +150,12 @@ def logout_view(request):
 def producer_dashboard(request):
     profile, created = ProducerProfile.objects.get_or_create(user=request.user)
     products = Product.objects.filter(producer=profile).order_by('-created_at')
-    return render(request, 'marketplace/dashboard.html', {'products': products, 'profile': profile})
+    low_stock = products.filter(is_active=True, stock__lt=F('low_stock_threshold'))
+    return render(request, 'marketplace/dashboard.html', {
+        'products': products,
+        'profile': profile,
+        'low_stock_products': low_stock,
+    })
 
 
 @producer_required
@@ -214,7 +256,7 @@ def product_detail(request, pk):
         'product': product,
         'reviews': reviews,
         'avg_rating': avg_rating,
-        'food_miles': food_miles,
+        'food_distance': food_miles,
     })
 
 
@@ -320,7 +362,11 @@ def cart_view(request):
             except Product.DoesNotExist:
                 continue
     total = sum(float(item['price']) * item['quantity'] for item in cart.values())
-    return render(request, 'marketplace/cart.html', {'cart': cart, 'total': total})
+    return render(request, 'marketplace/cart.html', {
+        'cart': cart,
+        'total': total,
+        'total_food_miles': round(total_food_distance, 1) if total_food_distance else None,
+    })
 @customer_required
 def cart_update(request, pk):
     if request.method != 'POST':
@@ -476,6 +522,7 @@ def checkout_complete(request):
         )
         product.stock -= item['quantity']
         product.save()
+        _send_low_stock_alert(product)
 
     # Clear session
     request.session.pop('cart', None)
@@ -577,13 +624,17 @@ def reorder(request,pk):
         pid = str(product.id)
         qty = min(item.quantity, product.stock)
 
+        effective_price = (
+            float(product.sale_price) if product.is_discounted and product.sale_price
+            else float(product.price)
+        )
         if pid in cart:
             cart[pid]['quantity'] += qty
             cart[pid]['subtotal'] = float(cart[pid]['price']) * cart[pid]['quantity']
         else:
             cart[pid] = {
                 'name': product.name,
-                'price': str(product.price),
+                'price': str(effective_price),
                 'quantity': qty,
                 'producer': product.producer.business_name,
                 'subtotal': effective_price * qty,
@@ -713,6 +764,22 @@ def submit_review(request,product_pk):
         'form': form,
         'product': product,
     })
+
+
+def delete_account(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    if request.method == 'POST':
+        if request.POST.get('confirm') == 'DELETE':
+            user = request.user
+            auth_logout(request)
+            user.delete()  # CASCADE removes orders, reviews, producer profile
+            messages.success(request, 'Your account and all personal data have been permanently deleted.')
+            return redirect('home')
+        messages.error(request, 'Please type DELETE exactly to confirm.')
+        return redirect('account_settings')
+    return redirect('account_settings')
+
 
 @restaurant_required
 def weekly_order_template(request):

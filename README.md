@@ -1,63 +1,245 @@
 # Bristol Regional Food Network – Digital Marketplace
 
+A Django-based marketplace connecting local Bristol producers with customers, community groups, and restaurants.
+
 ## Tech Stack
-- Django 4.2 + Django REST Framework
-- PostgreSQL (via Docker)
+- Django 4.2 + Django REST Framework 3.15
+- PostgreSQL 15 (via Docker)
+- Stripe (test mode) for payments
+- Pillow for image uploads
 - Docker + Docker Compose
 
-## Project Structure
-```
-bristol_marketplace/
-├── config/              # Django project settings & URLs
-├── marketplace/         # Main app (models, views, forms, API)
-├── templates/           # HTML templates
-├── static/              # CSS, JS, images
-├── Dockerfile
-├── docker-compose.yml
-└── requirements.txt
-```
+---
 
 ## Quick Start
 
 ### With Docker (recommended)
+
 ```bash
-# Build and start all containers
+# 1. Clone the repo
+git clone https://github.com/eleftherios2tsou/bristol_marketplace.git
+cd bristol_marketplace
+
+# 2. Copy environment variables
+cp .env.example .env   # then fill in your Stripe test keys
+
+# 3. Build and start
 docker-compose up --build
 
-# Run migrations (in a new terminal)
+# 4. In a second terminal — run migrations
 docker-compose exec web python manage.py migrate
 
-# Create superuser
+# 5. Create a superuser (optional)
 docker-compose exec web python manage.py createsuperuser
 
 # App is available at http://localhost:8000
 ```
 
 ### Without Docker (local dev)
+
 ```bash
 pip install -r requirements.txt
 
-# Set up PostgreSQL locally, then run from the root(bristol_marketplace):
+# Set environment variables (see below), then:
 python manage.py migrate
 python manage.py createsuperuser
 python manage.py runserver
 ```
 
-## Key URLs
+---
+
+## Environment Variables
+
+Create a `.env` file in the project root (or export these in your shell):
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `SECRET_KEY` | Django secret key | insecure fallback (change in prod) |
+| `DEBUG` | Debug mode (`1` = on) | `1` |
+| `POSTGRES_DB` | Database name | `bristol_marketplace` |
+| `POSTGRES_USER` | Database user | `postgres` |
+| `POSTGRES_PASSWORD` | Database password | `postgres` |
+| `POSTGRES_HOST` | Database host | `db` (Docker) / `localhost` (local) |
+| `POSTGRES_PORT` | Database port | `5432` |
+| `STRIPE_SECRET_KEY` | Stripe secret key (test mode) | *(required for payments)* |
+| `STRIPE_PUBLISHABLE_KEY` | Stripe publishable key (test mode) | *(required for payments)* |
+
+Get free Stripe test keys at https://dashboard.stripe.com/test/apikeys
+
+---
+
+## Test Accounts
+
+Run these commands after `migrate` and `createsuperuser` to seed demo data, or create accounts manually via the registration pages:
+
+| Role | Username | Password | Notes |
+|------|----------|----------|-------|
+| Superuser | `admin` | *(set during createsuperuser)* | Django admin access |
+| Producer | Register at `/register/producer/` | — | Gets producer dashboard |
+| Customer | Register at `/register/` | — | Gets shopping cart |
+
+**Stripe test card:** `4242 4242 4242 4242` · Any future expiry · Any 3-digit CVC
+
+---
+
+## URL Map
+
+### Public
 | URL | Description |
 |-----|-------------|
-| `/` | Homepage / product browsing |
-| `/products/` | Full product list with filters |
+| `/` | Homepage — featured products |
+| `/products/` | Browse all products (search, filter) |
+| `/products/<id>/` | Product detail + reviews |
+| `/producers/<id>/` | Public producer profile |
 | `/register/` | Customer registration |
 | `/register/producer/` | Producer registration |
 | `/login/` | Login |
-| `/dashboard/` | Producer dashboard |
-| `/cart/` | Shopping cart |
-| `/admin/` | Django admin |
-| `/api/products/` | REST API - products |
-| `/api/orders/` | REST API - orders |
+| `/logout/` | Logout |
 
-## Sprint 1 Target Features
+### Customer (login required)
+| URL | Description |
+|-----|-------------|
+| `/cart/` | Shopping cart |
+| `/cart/add/<id>/` | Add product to cart |
+| `/cart/remove/<id>/` | Remove from cart |
+| `/cart/update/<id>/` | Update quantity |
+| `/checkout/` | Delivery details form |
+| `/checkout/payment/` | Stripe Elements payment page |
+| `/checkout/complete/` | Post-payment order creation |
+| `/orders/<id>/confirmation/` | Order confirmation |
+| `/orders/history/` | Order history |
+| `/products/<id>/review/` | Submit product review |
+| `/account/settings/` | Email / password / profile settings |
+| `/account/delete/` | GDPR account deletion |
+
+### Producer (login required, producer role)
+| URL | Description |
+|-----|-------------|
+| `/dashboard/` | Producer dashboard |
+| `/dashboard/products/add/` | Add new product |
+| `/dashboard/products/<id>/edit/` | Edit product |
+| `/dashboard/products/<id>/delete/` | Delete product |
+| `/producer/orders/` | Order management |
+| `/producer/orders/<id>/update/` | Update order status |
+| `/producer/payments/` | Weekly payment settlements |
+| `/producer/payments/export/` | Download CSV |
+
+### REST API
+| URL | Method | Description |
+|-----|--------|-------------|
+| `/api/products/` | GET | List active products |
+| `/api/products/` | POST | Create product (producers) |
+| `/api/products/<id>/` | GET/PUT/PATCH/DELETE | Product detail/edit |
+| `/api/products/my/` | GET | Producer's own products |
+| `/api/categories/` | GET | List categories |
+| `/api/orders/` | GET | Customer's / producer's orders |
+| `/api/orders/` | POST | Create order (customers) |
+| `/api/orders/<id>/` | PATCH | Update status (producers) |
+
+### Admin
+| URL | Description |
+|-----|-------------|
+| `/admin/` | Django admin |
+| `/admin/marketplace/metrics/` | Marketplace metrics dashboard (superuser) |
+
+---
+
+## Sprint Summary
+
+### Sprint 1 (Eleftherios & Gia)
+| ID | Feature | Assignee |
+|----|---------|----------|
+| S1-001 | Docker + Django setup | Eleftherios |
+| S1-002 | Custom user model with roles | Eleftherios |
+| S1-003 | Customer registration & login | Gia |
+| S1-004 | Producer registration + ProducerProfile | Gia |
+| S1-005 | RBAC decorators | Eleftherios |
+| S1-006 | Product & Category models | Eleftherios |
+| S1-007 | Producer dashboard + product CRUD | Eleftherios |
+| S1-008 | Product browsing + search/filter | Gia |
+| S1-009 | Shopping cart (session-based) | Gia |
+| S1-010 | Order model + basic checkout | Gia |
+| S1-011 | Django REST Framework API | Eleftherios |
+| S1-012 | Migrations & admin | Eleftherios |
+| S1-013 | Base HTML templates | Eleftherios |
+
+### Sprint 2 (Eleftherios & Gia)
+| ID | Feature | Assignee |
+|----|---------|----------|
+| S2-001 | Producer order management | Gia |
+| S2-002 | Customer order history | Gia |
+| S2-003 | Stock decrement on checkout | Gia |
+| S2-004 | Product image upload | Eleftherios |
+| S2-005 | Public producer profile | Eleftherios |
+| S2-006 | Order confirmation emails | Eleftherios |
+| S2-007 | User account settings | Gia |
+| S2-008 | Order API enhancements | Gia |
+| S2-009 | Delivery date validation | Gia |
+| S2-010 | Featured products on homepage | Eleftherios |
+| S2-011 | Product reviews & ratings | Eleftherios |
+| S2-012 | Responsive / mobile layout | Eleftherios |
+
+### Sprint 3 (Eleftherios)
+| ID | Feature | Status |
+|----|---------|--------|
+| S3-001 | Stripe payment integration | Done |
+| S3-002 | Multi-vendor order split | Done |
+| S3-003 | Producer payment settlement + CSV | Done |
+| S3-004 | Product search (name, description, producer) | Done |
+| S3-011 | Security hardening & GDPR deletion | Done |
+| S3-012 | Admin metrics dashboard | Done |
+| S3-013 | Automated Django tests | Done |
+| S3-014 | README & submission prep | Done |
+
+---
+
+## Running Tests
+
+```bash
+# With Docker
+docker-compose exec web python manage.py test marketplace
+
+# Locally
+python manage.py test marketplace
+```
+
+---
+
+## Contributions Matrix
+
+| Task Area | Eleftherios | Gia |
+|-----------|-------------|-----|
+| Project setup & Docker | ✓ | |
+| User model & RBAC | ✓ | |
+| Customer auth (register/login) | | ✓ |
+| Producer registration | | ✓ |
+| Product & Category models | ✓ | |
+| Producer dashboard + CRUD | ✓ | |
+| Product browsing & cart | | ✓ |
+| Order model & checkout | | ✓ |
+| REST API | ✓ | |
+| Admin setup | ✓ | |
+| Base templates | ✓ | |
+| Order management (producer) | | ✓ |
+| Order history (customer) | | ✓ |
+| Stock decrement | | ✓ |
+| Product images | ✓ | |
+| Producer profile page | ✓ | |
+| Email notifications | ✓ | |
+| Account settings | | ✓ |
+| API enhancements | | ✓ |
+| Delivery date validation | | ✓ |
+| Featured products homepage | ✓ | |
+| Reviews & ratings | ✓ | |
+| Responsive layout | ✓ | |
+| Stripe payments | ✓ | |
+| Multi-vendor breakdown | ✓ | |
+| Payment settlements + CSV | ✓ | |
+| Enhanced product search | ✓ | |
+| Security & GDPR | ✓ | |
+| Admin metrics dashboard | ✓ | |
+| Automated tests | ✓ | |
+
 
 
 | ID      | Task Title                                   | Description / Acceptance Criteria | Test Cases | Priority | Assignee | Estimate | Status |
@@ -113,4 +295,3 @@ python manage.py runserver
 | S3-014 | README & submission prep | Update README with complete setup instructions, environment variable reference, test account credentials, and URL map. Ensure GitHub repo is public. Tag final release commit. Complete and sign Contributions Matrix. | — | High | Whole team | 2h | To Do |
 | S3-015 | Surplus produce discounts | Producers can mark a product as discounted and set a reduced sale price. Discounted products are visually flagged on product list cards and the detail page. Discount applies to products approaching their best-before date or with high stock. | TC-019 | Medium | Eleftherios | 4h | To Do |
 | S3-016 | Low stock notifications | When a product's stock falls below a configurable threshold (default: 5 units), the system sends an email alert to the producer. Alert also shown as a banner in the producer dashboard until stock is updated. | TC-023 | Medium | Gia Ngo | 3h | To Do |
-

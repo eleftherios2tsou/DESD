@@ -73,6 +73,9 @@ class Product(models.Model):
     lead_time_hours = models.PositiveIntegerField(
         default=48, help_text='Minimum order lead time in hours'
     )
+    low_stock_threshold = models.PositiveIntegerField(
+        default=5, help_text='Send alert when stock falls below this level'
+    )
     is_discounted = models.BooleanField(default=False)
     sale_price = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     image = models.ImageField(upload_to='products/', blank=True, null=True)
