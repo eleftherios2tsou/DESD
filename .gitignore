@@ -7,3 +7,4 @@ db.sqlite3
 venv/
 .vscode/
 .venv
+TEST_CASES.md

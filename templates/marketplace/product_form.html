@@ -184,6 +184,9 @@
 
         <p class="form-section-title">Listing Status</p>
         {{ form.is_active.label_tag }} {{ form.is_active }} {{ form.is_active.errors }}
+        {{ form.low_stock_threshold.label_tag }} {{ form.low_stock_threshold }}
+        <p class="helptext">{{ form.low_stock_threshold.help_text }}</p>
+        {{ form.low_stock_threshold.errors }}
 
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">{{ action }} Product</button>
