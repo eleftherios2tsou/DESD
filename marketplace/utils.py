@@ -31,7 +31,7 @@ def load_postcodes():
 def get_coordinates(postcode):
     load_postcodes()
     pc = postcode.replace(' ', '').upper()
-    return POSTCODE_CACHE.get(clean)
+    return POSTCODE_CACHE.get(pc)
 
 def calculate_food_distance(customer_postcode, producer_postcode):
     customer_coords = get_coordinates(customer_postcode)
