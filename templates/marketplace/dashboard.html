@@ -151,7 +151,14 @@
             </td>
             <td>{{ product.category.name|default:"—" }}</td>
             <td>£{{ product.price }}</td>
-            <td>{{ product.stock }}</td>
+            <td>
+                <form method="post" action="{% url 'update_stock' product.pk %}" style="display:flex; align-items:center; gap:0.4rem;">
+                {% csrf_token %}
+                <input type="number" name="stock" value="{{ product.stock }}" min="0"
+                        style="width:70px; padding:0.35rem 0.5rem; border:1px solid #ddd; border-radius:6px; font-size:0.85rem; text-align:center;">
+                <button type="submit" class="btn btn-secondary" style="padding:0.35rem 0.6rem; font-size:0.78rem;">Update</button>
+                </form>
+            </td>
             <td>
                 {% if product.is_active %}
                     <span class="badge badge-active">Active</span>

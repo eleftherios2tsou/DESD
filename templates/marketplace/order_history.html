@@ -61,6 +61,19 @@
     padding: 0.2rem 0.6rem;
     border-radius: 6px;
 }
+.btn-reorder {
+    padding: 0.5rem 1.2rem;
+    background: #52b788;
+    color: #1a3a2a;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: filter 0.15s;
+}
+
+.btn-reorder:hover { filter: brightness(1.08); }
 
 /* ── Status Badge ── */
 .badge {
@@ -227,6 +240,10 @@
                 <strong>Delivery Address</strong>
                 {{ order.delivery_address }}
             </div>
+            <form method="post" action="{% url 'reorder' order.pk %}">
+                {% csrf_token %}
+            <button type="submit" class="btn-reorder">🔄 Reorder</button>
+            </form>
         </div>
 
     </div>

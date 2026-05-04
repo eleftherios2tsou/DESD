@@ -13,10 +13,10 @@ from django.conf import settings
 from django.db.models import Avg, Q
 from django.http import HttpResponse
 
-from .forms import RegistrationForm, ProducerRegistrationForm, ProductForm, CheckoutForm, AccountSettingsForm, ProducerProfileForm, ReviewForm
-from .models import ProducerProfile, Product, Category, Order, OrderItem, Review
-from .decorators import producer_required, customer_required
-
+from .forms import RegistrationForm, ProducerRegistrationForm, ProductForm, CheckoutForm, AccountSettingsForm, ProducerProfileForm,ReviewForm, CommunityGroupRegistrationForm, RestaurantRegistrationForm
+from .models import ProducerProfile, Product, Category, Order, OrderItem, Review, WeeklyOrderItem,WeeklyOrderTemplate
+from .decorators import producer_required, customer_required, restaurant_required
+from.utils import calculate_food_distance
 
 def home(request):
     featured_products = Product.objects.filter(is_active=True).order_by('-created_at')[:6]
@@ -58,6 +58,32 @@ def register_producer(request):
     else:
         form = ProducerRegistrationForm()
     return render(request, 'marketplace/producer_register.html', {'form': form})
+
+def community_register(request):
+    if request.user.is_authenticated:
+        return redirect('home')
+    if request.method == 'POST':
+        form = CommunityGroupRegistrationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Account created! Please log in.')
+            return redirect('login')
+    else:
+        form = CommunityGroupRegistrationForm()
+    return render(request, 'marketplace/community_register.html', {'form': form})
+
+def restaurant_register(request):
+    if request.user.is_authenticated:
+        return redirect('home')
+    if request.method == 'POST':
+        form = RestaurantRegistrationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Account created! Please log in.')
+            return redirect('login')
+    else:
+        form = RestaurantRegistrationForm()
+    return render(request, 'marketplace/restaurant_register.html', {'form': form})
 
 
 def login_view(request):
@@ -143,7 +169,20 @@ def product_delete(request, pk):
         messages.success(request, f'Product "{name}" deleted.')
         return redirect('dashboard')
     return render(request, 'marketplace/product_confirm_delete.html', {'product': product})
-
+@producer_required
+def update_stock(request, pk):
+    product = get_object_or_404(Product, pk=pk, producer=request.user.producer_profile)
+    if request.method == 'POST':
+        try:
+            new_stock = int(request.POST.get('stock', product.stock))
+            if new_stock < 0:
+                raise ValueError
+            product.stock = new_stock
+            product.save()
+            messages.success(request, f'Stock for "{product.name}" updated to {new_stock}.')
+        except ValueError:
+            messages.error(request, 'Please enter a valid non-negative integer for stock.')
+    return redirect('dashboard')
 def producer_profile(request, pk):
     profile = get_object_or_404(ProducerProfile, pk=pk)
     products = Product.objects.filter(producer=profile, is_active=True).order_by('-created_at')
@@ -151,7 +190,7 @@ def producer_profile(request, pk):
 
 
 def product_list(request):
-    products = Product.objects.filter(is_active=True).select_related('producer', 'category')
+    products = Product.objects.filter(is_active=True).exclude(season_status = 'out_of_season').select_related('producer', 'category')
 
     search = request.GET.get('search', '')
     category = request.GET.get('category', '')
@@ -180,10 +219,18 @@ def product_detail(request, pk):
     product = get_object_or_404(Product, pk=pk, is_active=True)
     reviews = product.reviews.all().order_by('-created_at')
     avg_rating = reviews.aggregate(Avg('rating'))['rating__avg']    
+
+    food_miles = None
+    customer_postcode = request.session.get('customer_postcode') if request.user.is_authenticated else None
+    if customer_postcode:
+        food_miles = calculate_food_distance(customer_postcode, product.producer.postcode)
+
     return render(request, 'marketplace/product_detail.html', {
         'product': product,
         'reviews': reviews,
-        'avg_rating': avg_rating,})
+        'avg_rating': avg_rating,
+        'food_miles': food_miles,
+    })
 
 
 @producer_required
@@ -243,6 +290,7 @@ def cart_add(request, pk):
     product = get_object_or_404(Product, pk=pk, is_active=True)
     cart = request.session.get('cart', {})
     quantity = int(request.POST.get('quantity', 1))
+    effective_price = float(product.sale_price) if product.is_discounted and product.sale_price else float(product.price)
 
     product_id = str(pk)
     current_in_cart = cart[product_id]['quantity'] if product_id in cart else 0
@@ -275,6 +323,17 @@ def cart_remove(request, pk):
 @customer_required
 def cart_view(request):
     cart = request.session.get('cart', {})
+    total_food_distance = 0
+    customer_postcode = request.session.get('customer_postcode') 
+    if customer_postcode:
+        for pid, item in cart.items():
+            try:
+                product = Product.objects.get(pk=int(pid))
+                distance = calculate_food_distance(customer_postcode, product.producer.postcode)
+                if distance :
+                    total_food_distance += distance
+            except Product.DoesNotExist:
+                continue
     total = sum(float(item['price']) * item['quantity'] for item in cart.values())
     return render(request, 'marketplace/cart.html', {'cart': cart, 'total': total})
 @customer_required
@@ -318,7 +377,9 @@ def checkout(request):
                 'full_name': form.cleaned_data['full_name'],
                 'email': form.cleaned_data['email'],
                 'postcode': form.cleaned_data['postcode'],
+                'special_delivery_instructions': form.cleaned_data.get('special_delivery_instructions', '')
             }
+            request.session['customer_postcode'] = form.cleaned_data['postcode']
             request.session['cart'] = cart  # ensure subtotals are persisted
 
             # Create Stripe PaymentIntent
@@ -513,8 +574,43 @@ def order_confirmation(request, pk):
 @customer_required
 def order_history(request):
     orders = Order.objects.filter(customer=request.user).order_by('-created_at')
+    
     return render(request, 'marketplace/order_history.html', {'orders': orders})
 
+@customer_required
+def reorder(request,pk):
+    order = get_object_or_404(Order, pk=pk, customer=request.user)
+    cart = request.session.get('cart', {})
+    unavailable = []
+
+    for item in order.items.all():
+        product = item.product
+        if product is None or not product.is_active or product.stock == 0:
+            unavailable.append(item.product.name if product else 'Deleted product')
+            continue
+
+        pid = str(product.id)
+        qty = min(item.quantity, product.stock)
+
+        if pid in cart:
+            cart[pid]['quantity'] += qty
+            cart[pid]['subtotal'] = float(cart[pid]['price']) * cart[pid]['quantity']
+        else:
+            cart[pid] = {
+                'name': product.name,
+                'price': str(product.price),
+                'quantity': qty,
+                'producer': product.producer.business_name,
+                'subtotal': effective_price * qty,
+            }
+    request.session['cart'] = cart
+    request.session.modified = True
+
+    if unavailable:
+        messages.warning(request, f'Some items were unavailable and not added to cart: {", ".join(unavailable)}')
+
+    messages.success(request, 'Order items added to cart. Please review your cart before checkout.')
+    return redirect('cart_view')
 
 @producer_required
 def producer_payments(request):
@@ -647,3 +743,59 @@ def delete_account(request):
         messages.error(request, 'Please type DELETE exactly to confirm.')
         return redirect('account_settings')
     return redirect('account_settings')
+
+
+@restaurant_required
+def weekly_order_template(request):
+    template, created = WeeklyOrderTemplate.objects.get_or_create(customer = request.user)
+    items = template.items.select_related('product').all()
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'add':
+            product_id = request.POST.get('product_id')
+            quantity = int(request.POST.get('quantity', 1))
+            product = get_object_or_404(Product, pk=product_id, is_active=True)
+            item, item_created = WeeklyOrderItem.objects.get_or_create(template=template, product=product, defaults={'quantity': quantity})
+            if not item_created:
+                item.quantity = quantity
+                item.save()
+            messages.success(request, f'Added "{product.name}" to your weekly template.')
+
+        elif action == 'remove':
+            item_id = request.POST.get('item_id')
+            WeeklyOrderItem.objects.filter(pk=item_id, template=template).delete()
+            messages.success(request, 'Item removed from your weekly template.')
+
+        elif action == 'to_cart':
+            cart = request.session.get('cart', {})
+            for item in items:
+                product = item.product
+                if product.is_active and product.stock > 0:
+                    pid = str(product.id)
+                    qty = min(item.quantity, product.stock)
+                    effective_price = float(product.sale_price) if product.is_discounted and product.sale_price else float(product.price)
+                    if pid in cart:
+                        cart[pid]['quantity'] += qty
+                        cart[pid]['subtotal'] = float(cart[pid]['price']) * cart[pid]['quantity']
+                    else:
+                        cart[pid] = {
+                            'name': product.name,
+                            'price': str(effective_price),
+                            'quantity': qty,
+                            'producer': product.producer.business_name,
+                            'subtotal': effective_price * qty,
+                        }
+            request.session['cart'] = cart
+            request.session.modified = True
+            messages.success(request, 'Weekly template items added to cart. Please review your cart before checkout.')
+            return redirect('cart_view')
+        return redirect('weekly_order_template')
+    
+    products = Product.objects.filter(is_active=True).exclude(season_status = 'out_of_season').select_related('producer', 'category')
+    return render(request, 'marketplace/weekly_order_template.html', {
+        'template': template,
+        'items': items,
+        'products': products,
+    })
