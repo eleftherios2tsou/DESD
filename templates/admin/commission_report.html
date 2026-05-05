@@ -1,0 +1,367 @@
+{% extends "admin/base_site.html" %}
+
+{% block title %}Commission Report | Admin{% endblock %}
+
+{% block content %}
+<style>
+    .report-section { margin-bottom: 2.5rem; }
+
+    .section-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1a3a2a;
+        margin: 2rem 0 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e5e5e5;
+    }
+
+    /* date range form */
+    .filter-bar {
+        background: #fff;
+        border-radius: 10px;
+        padding: 1.25rem 1.5rem;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        display: flex;
+        gap: 1rem;
+        align-items: flex-end;
+        flex-wrap: wrap;
+        margin-bottom: 2rem;
+    }
+
+    .filter-bar label { display: block; font-size: 0.75rem; color: #666; font-weight: 600; margin-bottom: 0.3rem; }
+    .filter-bar input[type="date"] {
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 0.9rem;
+    }
+
+    .btn-filter {
+        padding: 0.55rem 1.25rem;
+        background: #417690;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .btn-export {
+        padding: 0.55rem 1.25rem;
+        background: #2d6a4f;
+        color: #fff;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    /* summary cards */
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .summary-card {
+        background: #fff;
+        border-radius: 10px;
+        padding: 1.1rem 1.4rem;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        border-left: 4px solid #417690;
+    }
+
+    .summary-card.green  { border-left-color: #2d6a4f; }
+    .summary-card.amber  { border-left-color: #b45309; }
+
+    .summary-card .slabel { font-size: 0.72rem; color: #888; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin-bottom: 0.35rem; }
+    .summary-card .svalue { font-size: 1.7rem; font-weight: 700; color: #1a3a2a; line-height: 1; }
+
+    /* orders table */
+    .report-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        font-size: 0.88rem;
+    }
+
+    .report-table th {
+        background: #f5f5f5;
+        padding: 0.7rem 1rem;
+        text-align: left;
+        font-size: 0.75rem;
+        color: #555;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .report-table td {
+        padding: 0.7rem 1rem;
+        border-top: 1px solid #f0f0f0;
+        color: #333;
+        vertical-align: top;
+    }
+
+    .report-table tr:hover td { background: #fafff9; }
+
+    .producer-row {
+        font-size: 0.82rem;
+        color: #555;
+        padding: 0.2rem 0;
+        border-bottom: 1px dashed #eee;
+    }
+
+    .producer-row:last-child { border-bottom: none; }
+
+    .producer-name { font-weight: 600; color: #1a3a2a; }
+    .commission-val { color: #b45309; }
+    .net-val { color: #2d6a4f; font-weight: 700; }
+
+    .toggle-btn {
+        background: none;
+        border: none;
+        color: #417690;
+        font-size: 0.8rem;
+        cursor: pointer;
+        padding: 0;
+        text-decoration: underline;
+    }
+
+    .detail-row { display: none; }
+    .detail-row.open { display: table-row; }
+
+    /* monthly table */
+    .month-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        font-size: 0.88rem;
+    }
+
+    .month-table th {
+        background: #f5f5f5;
+        padding: 0.65rem 1rem;
+        text-align: left;
+        font-size: 0.75rem;
+        color: #555;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .month-table td {
+        padding: 0.65rem 1rem;
+        border-top: 1px solid #f0f0f0;
+        color: #333;
+    }
+
+    /* ytd banner */
+    .ytd-banner {
+        background: #fff;
+        border-radius: 10px;
+        padding: 1.25rem 1.5rem;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+    }
+
+    @media (max-width: 680px) { .ytd-banner { grid-template-columns: 1fr 1fr; } }
+
+    .ytd-stat .ytd-label { font-size: 0.72rem; color: #888; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+    .ytd-stat .ytd-value { font-size: 1.3rem; font-weight: 700; color: #1a3a2a; }
+    .ytd-stat .ytd-value.commission { color: #b45309; }
+    .ytd-stat .ytd-value.net { color: #2d6a4f; }
+</style>
+
+<h1>Commission Report</h1>
+<p style="color:#888; font-size:0.9rem; margin-bottom:1.5rem;">Network commission and producer payment breakdown — superuser only</p>
+
+<!-- Date range filter -->
+<form method="get" class="filter-bar">
+    <div>
+        <label for="date_from">From</label>
+        <input type="date" id="date_from" name="date_from" value="{{ date_from|date:'Y-m-d' }}">
+    </div>
+    <div>
+        <label for="date_to">To</label>
+        <input type="date" id="date_to" name="date_to" value="{{ date_to|date:'Y-m-d' }}">
+    </div>
+    <button type="submit" class="btn-filter">Generate Report</button>
+    <a href="{% url 'admin:commission_report_csv' %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}" class="btn-export">⬇ Export CSV</a>
+</form>
+
+<!-- Period summary cards -->
+<div class="summary-grid">
+    <div class="summary-card">
+        <p class="slabel">Orders Processed</p>
+        <p class="svalue">{{ total_orders }}</p>
+    </div>
+    <div class="summary-card">
+        <p class="slabel">Total Order Value</p>
+        <p class="svalue">£{{ total_gross|floatformat:2 }}</p>
+    </div>
+    <div class="summary-card amber">
+        <p class="slabel">Commission (5%)</p>
+        <p class="svalue">£{{ total_commission|floatformat:2 }}</p>
+    </div>
+    <div class="summary-card green">
+        <p class="slabel">Producer Payments (95%)</p>
+        <p class="svalue">£{{ total_net|floatformat:2 }}</p>
+    </div>
+</div>
+
+<!-- Per-order breakdown -->
+<p class="section-title">Order Breakdown — {{ date_from|date:"d M Y" }} to {{ date_to|date:"d M Y" }}</p>
+
+{% if order_reports %}
+<table class="report-table">
+    <thead>
+        <tr>
+            <th>Order #</th>
+            <th>Date</th>
+            <th>Customer</th>
+            <th>Status</th>
+            <th>Order Total</th>
+            <th>Commission (5%)</th>
+            <th>Producer Payments</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in order_reports %}
+        <tr>
+            <td><strong>#{{ r.order.id }}</strong></td>
+            <td>{{ r.order.created_at|date:"d M Y" }}</td>
+            <td>{{ r.order.customer.username }}</td>
+            <td>{{ r.order.status|capfirst }}</td>
+            <td>£{{ r.order.total_price|floatformat:2 }}</td>
+            <td class="commission-val">£{{ r.order.commission_amount|floatformat:2 }}</td>
+            <td>
+                {% for pb in r.producers.values %}
+                <div class="producer-row">
+                    <span class="producer-name">{{ pb.name }}</span>
+                    — gross £{{ pb.gross|floatformat:2 }}
+                    → <span class="net-val">net £{{ pb.net|floatformat:2 }}</span>
+                </div>
+                {% endfor %}
+            </td>
+            <td>
+                <button class="toggle-btn" onclick="toggleDetail({{ r.order.id }})">details</button>
+            </td>
+        </tr>
+        <!-- expanded detail row -->
+        <tr id="detail-{{ r.order.id }}" class="detail-row">
+            <td colspan="8" style="background:#f9fafb; padding:0.75rem 1rem;">
+                <strong>Order #{{ r.order.id }} — detailed calculation</strong>
+                <table style="margin-top:0.5rem; font-size:0.83rem; width:100%;">
+                    <thead>
+                        <tr style="color:#888;">
+                            <th style="text-align:left; padding:0.3rem 0.5rem;">Producer</th>
+                            <th style="text-align:right; padding:0.3rem 0.5rem;">Gross</th>
+                            <th style="text-align:right; padding:0.3rem 0.5rem;">Commission (5%)</th>
+                            <th style="text-align:right; padding:0.3rem 0.5rem;">Producer Payment (95%)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pb in r.producers.values %}
+                        <tr>
+                            <td style="padding:0.3rem 0.5rem;">{{ pb.name }}</td>
+                            <td style="text-align:right; padding:0.3rem 0.5rem;">£{{ pb.gross|floatformat:2 }}</td>
+                            <td style="text-align:right; padding:0.3rem 0.5rem; color:#b45309;">£{{ pb.commission|floatformat:2 }}</td>
+                            <td style="text-align:right; padding:0.3rem 0.5rem; color:#2d6a4f; font-weight:700;">£{{ pb.net|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                        <tr style="border-top:2px solid #ddd; font-weight:700;">
+                            <td style="padding:0.4rem 0.5rem;">Order total</td>
+                            <td style="text-align:right; padding:0.4rem 0.5rem;">£{{ r.order.total_price|floatformat:2 }}</td>
+                            <td style="text-align:right; padding:0.4rem 0.5rem; color:#b45309;">£{{ r.order.commission_amount|floatformat:2 }}</td>
+                            <td style="text-align:right; padding:0.4rem 0.5rem; color:#2d6a4f;"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% else %}
+<p style="color:#999; background:#fff; padding:2rem; border-radius:10px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.08);">
+    No paid orders found for this date range.
+</p>
+{% endif %}
+
+<!-- Monthly summary -->
+<p class="section-title">Monthly Summary</p>
+
+{% if monthly_summary %}
+<table class="month-table">
+    <thead>
+        <tr>
+            <th>Month</th>
+            <th>Orders</th>
+            <th>Gross Revenue</th>
+            <th>Commission (5%)</th>
+            <th>Producer Payments (95%)</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for month, data in monthly_summary.items %}
+        <tr>
+            <td><strong>{{ month }}</strong></td>
+            <td>{{ data.count }}</td>
+            <td>£{{ data.gross|floatformat:2 }}</td>
+            <td style="color:#b45309;">£{{ data.commission|floatformat:2 }}</td>
+            <td style="color:#2d6a4f; font-weight:700;">£{{ data.net|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p style="color:#999;">No data for monthly summary.</p>
+{% endif %}
+
+<!-- Year-to-date totals -->
+<p class="section-title">Year-to-Date Totals (Tax year from {{ tax_year_start|date:"d M Y" }})</p>
+
+<div class="ytd-banner">
+    <div class="ytd-stat">
+        <p class="ytd-label">YTD Gross Revenue</p>
+        <p class="ytd-value">£{{ ytd_gross|floatformat:2 }}</p>
+    </div>
+    <div class="ytd-stat">
+        <p class="ytd-label">YTD Commission (5%)</p>
+        <p class="ytd-value commission">£{{ ytd_commission|floatformat:2 }}</p>
+    </div>
+    <div class="ytd-stat">
+        <p class="ytd-label">YTD Producer Payments (95%)</p>
+        <p class="ytd-value net">£{{ ytd_net|floatformat:2 }}</p>
+    </div>
+    <div class="ytd-stat">
+        <p class="ytd-label">Tax Year Start</p>
+        <p class="ytd-value" style="font-size:1rem;">{{ tax_year_start|date:"d M Y" }}</p>
+    </div>
+</div>
+
+<p style="margin-top:2rem; display:flex; gap:1.5rem;">
+    <a href="{% url 'admin:marketplace_metrics' %}">← Marketplace Metrics</a>
+    <a href="{% url 'admin:index' %}">← Back to Admin</a>
+</p>
+
+<script>
+    function toggleDetail(orderId) {
+        const row = document.getElementById('detail-' + orderId);
+        row.classList.toggle('open');
+    }
+</script>
+
+{% endblock %}

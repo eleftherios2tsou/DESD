@@ -2,7 +2,7 @@ from django.urls import path
 from . import views
 
 # all the url patterns for the marketplace app
-# these get included in config/urls.py under the root path
+
 urlpatterns = [
     path('', views.home, name='home'),
 

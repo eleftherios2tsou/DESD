@@ -136,6 +136,11 @@ def login_view(request):
                 cache.delete(cache_key)  # reset the counter on success
                 user = form.get_user()
                 auth_login(request, user)
+                # if remember me is not ticked, expire the session when the browser closes
+                if not request.POST.get('remember_me'):
+                    request.session.set_expiry(0)
+                else:
+                    request.session.set_expiry(1209600)  # 2 weeks in seconds
                 # producers go to their dashboard, everyone else goes home
                 if user.role == 'producer':
                     return redirect('dashboard')

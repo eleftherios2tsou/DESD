@@ -3,6 +3,11 @@ from django.contrib.auth.admin import UserAdmin
 from django.db.models import Sum, Count
 from django.template.response import TemplateResponse
 from django.urls import path
+from django.http import HttpResponse
+from datetime import date, timedelta
+from decimal import Decimal
+from collections import defaultdict
+import csv
 
 from .models import CustomUser, ProducerProfile, Category, Product, Order, OrderItem, Review
 
@@ -98,6 +103,139 @@ def marketplace_metrics_view(request):
     return TemplateResponse(request, 'admin/marketplace_metrics.html', context)
 
 
+# ── Commission Report — admin financial report with date range, per-order breakdown, CSV export ──
+
+def commission_report_view(request):
+    today = date.today()
+    default_from = today - timedelta(weeks=2)
+
+    # read date range from query string, default to previous 2 weeks
+    date_from_str = request.GET.get('date_from', default_from.isoformat())
+    date_to_str = request.GET.get('date_to', today.isoformat())
+    try:
+        date_from = date.fromisoformat(date_from_str)
+        date_to = date.fromisoformat(date_to_str)
+    except ValueError:
+        date_from = default_from
+        date_to = today
+
+    orders = Order.objects.filter(
+        status__in=['paid', 'confirmed', 'delivered'],
+        created_at__date__gte=date_from,
+        created_at__date__lte=date_to,
+    ).prefetch_related('items__product__producer').order_by('-created_at')
+
+    # build per-order breakdown grouped by producer within each order
+    order_reports = []
+    for order in orders:
+        producers = defaultdict(lambda: {'name': '', 'gross': Decimal('0'), 'items': []})
+        for item in order.items.all():
+            if item.product:
+                pid = item.product.producer.pk
+                producers[pid]['name'] = item.product.producer.business_name
+                producers[pid]['gross'] += item.unit_price * item.quantity
+                producers[pid]['items'].append(item)
+        for pb in producers.values():
+            pb['commission'] = (pb['gross'] * Decimal('0.05')).quantize(Decimal('0.01'))
+            pb['net'] = (pb['gross'] * Decimal('0.95')).quantize(Decimal('0.01'))
+        order_reports.append({
+            'order': order,
+            'producers': dict(producers),
+        })
+
+    # summary totals for the selected period
+    total_gross = sum(r['order'].total_price for r in order_reports)
+    total_commission = sum(r['order'].commission_amount for r in order_reports)
+    total_net = total_gross - total_commission
+
+    # group by month for the monthly summary section
+    monthly = defaultdict(lambda: {'gross': Decimal('0'), 'commission': Decimal('0'), 'net': Decimal('0'), 'count': 0})
+    for r in order_reports:
+        key = r['order'].created_at.strftime('%B %Y')
+        monthly[key]['gross'] += r['order'].total_price
+        monthly[key]['commission'] += r['order'].commission_amount
+        monthly[key]['net'] += r['order'].total_price - r['order'].commission_amount
+        monthly[key]['count'] += 1
+
+    # UK tax year for YTD totals
+    if today.month < 4 or (today.month == 4 and today.day < 6):
+        tax_year_start = date(today.year - 1, 4, 6)
+    else:
+        tax_year_start = date(today.year, 4, 6)
+
+    ytd_qs = Order.objects.filter(status__in=['paid', 'confirmed', 'delivered'], created_at__date__gte=tax_year_start)
+    ytd_gross = ytd_qs.aggregate(t=Sum('total_price'))['t'] or Decimal('0')
+    ytd_commission = ytd_qs.aggregate(t=Sum('commission_amount'))['t'] or Decimal('0')
+
+    context = {
+        **admin.site.each_context(request),
+        'title': 'Commission Report',
+        'date_from': date_from,
+        'date_to': date_to,
+        'order_reports': order_reports,
+        'total_orders': len(order_reports),
+        'total_gross': total_gross,
+        'total_commission': total_commission,
+        'total_net': total_net,
+        'monthly_summary': dict(monthly),
+        'ytd_gross': ytd_gross,
+        'ytd_commission': ytd_commission,
+        'ytd_net': ytd_gross - ytd_commission,
+        'tax_year_start': tax_year_start,
+    }
+    return TemplateResponse(request, 'admin/commission_report.html', context)
+
+
+def commission_report_csv(request):
+    today = date.today()
+    date_from_str = request.GET.get('date_from', (today - timedelta(weeks=2)).isoformat())
+    date_to_str = request.GET.get('date_to', today.isoformat())
+    try:
+        date_from = date.fromisoformat(date_from_str)
+        date_to = date.fromisoformat(date_to_str)
+    except ValueError:
+        date_from = today - timedelta(weeks=2)
+        date_to = today
+
+    orders = Order.objects.filter(
+        status__in=['paid', 'confirmed', 'delivered'],
+        created_at__date__gte=date_from,
+        created_at__date__lte=date_to,
+    ).prefetch_related('items__product__producer').order_by('-created_at')
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="commission_report_{date_from}_{date_to}.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Order #', 'Order Date', 'Customer', 'Status', 'Producer', 'Producer Gross (£)', 'Commission 5% (£)', 'Producer Net 95% (£)', 'Order Total (£)', 'Order Commission (£)'])
+
+    for order in orders:
+        producers = defaultdict(lambda: {'name': '', 'gross': Decimal('0')})
+        for item in order.items.all():
+            if item.product:
+                pid = item.product.producer.pk
+                producers[pid]['name'] = item.product.producer.business_name
+                producers[pid]['gross'] += item.unit_price * item.quantity
+
+        for pb in producers.values():
+            commission = (pb['gross'] * Decimal('0.05')).quantize(Decimal('0.01'))
+            net = (pb['gross'] * Decimal('0.95')).quantize(Decimal('0.01'))
+            writer.writerow([
+                order.id,
+                order.created_at.date(),
+                order.customer.username,
+                order.status,
+                pb['name'],
+                pb['gross'],
+                commission,
+                net,
+                order.total_price,
+                order.commission_amount,
+            ])
+
+    return response
+
+
 # we patch the admin site's get_urls to inject our custom metrics url
 # found this approach in the django docs - cleaner than overriding AdminSite
 _original_get_urls = admin.AdminSite.get_urls
@@ -109,6 +247,16 @@ def _patched_get_urls(self):
             'marketplace/metrics/',
             self.admin_view(marketplace_metrics_view, cacheable=True),
             name='marketplace_metrics',
+        ),
+        path(
+            'marketplace/commission/',
+            self.admin_view(commission_report_view),
+            name='commission_report',
+        ),
+        path(
+            'marketplace/commission/export/',
+            self.admin_view(commission_report_csv),
+            name='commission_report_csv',
         ),
     ]
     return custom + _original_get_urls(self)
