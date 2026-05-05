@@ -78,7 +78,7 @@ Run these commands after `migrate` and `createsuperuser` to seed demo data, or c
 | Producer | Register at `/register/producer/` | — | Gets producer dashboard |
 | Customer | Register at `/register/` | — | Gets shopping cart |
 
-**Stripe test card:** `4242 4242 4242 4242` · Any future expiry · Any 3-digit CVC
+**Stripe test card:** `4242 4242 4242 4242` · expiry: 12/34 · CVC: 123
 
 ---
 
@@ -179,17 +179,25 @@ Run these commands after `migrate` and `createsuperuser` to seed demo data, or c
 | S2-011 | Product reviews & ratings | Eleftherios |
 | S2-012 | Responsive / mobile layout | Eleftherios |
 
-### Sprint 3 (Eleftherios)
-| ID | Feature | Status |
-|----|---------|--------|
-| S3-001 | Stripe payment integration | Done |
-| S3-002 | Multi-vendor order split | Done |
-| S3-003 | Producer payment settlement + CSV | Done |
-| S3-004 | Product search (name, description, producer) | Done |
-| S3-011 | Security hardening & GDPR deletion | Done |
-| S3-012 | Admin metrics dashboard | Done |
-| S3-013 | Automated Django tests | Done |
-| S3-014 | README & submission prep | Done |
+### Sprint 3 (Eleftherios & Gia Ngo)
+| ID | Feature | Assignee | Status |
+|----|---------|----------|--------|
+| S3-001 | Stripe payment integration | Eleftherios | Done |
+| S3-002 | Multi-vendor order split & payment distribution | Eleftherios | Done |
+| S3-003 | Producer weekly payment settlement + CSV | Eleftherios | Done |
+| S3-004 | Product search functionality | Gia Ngo | Done |
+| S3-005 | Organic certification filter | Gia Ngo | Done |
+| S3-006 | Seasonal availability management | Gia Ngo | Done |
+| S3-007 | Producer stock / inventory update | Gia Ngo | Done |
+| S3-008 | Order history with reorder | Gia Ngo | Done |
+| S3-009 | Food miles display | Eleftherios | Done |
+| S3-010 | Community group & restaurant account types | Gia Ngo | Done |
+| S3-011 | Security hardening & GDPR | Eleftherios | Done |
+| S3-012 | Admin metrics dashboard | Eleftherios | Done |
+| S3-013 | End-to-end testing & bug fixes | Eleftherios | Done |
+| S3-014 | README & submission prep | Eleftherios | Done |
+| S3-015 | Surplus produce discounts | Gia Ngo | Done |
+| S3-016 | Low stock notifications | Eleftherios | Done |
 
 ---
 
@@ -204,41 +212,6 @@ python manage.py test marketplace
 ```
 
 ---
-
-## Contributions Matrix
-
-| Task Area | Eleftherios | Gia |
-|-----------|-------------|-----|
-| Project setup & Docker | ✓ | |
-| User model & RBAC | ✓ | |
-| Customer auth (register/login) | | ✓ |
-| Producer registration | | ✓ |
-| Product & Category models | ✓ | |
-| Producer dashboard + CRUD | ✓ | |
-| Product browsing & cart | | ✓ |
-| Order model & checkout | | ✓ |
-| REST API | ✓ | |
-| Admin setup | ✓ | |
-| Base templates | ✓ | |
-| Order management (producer) | | ✓ |
-| Order history (customer) | | ✓ |
-| Stock decrement | | ✓ |
-| Product images | ✓ | |
-| Producer profile page | ✓ | |
-| Email notifications | ✓ | |
-| Account settings | | ✓ |
-| API enhancements | | ✓ |
-| Delivery date validation | | ✓ |
-| Featured products homepage | ✓ | |
-| Reviews & ratings | ✓ | |
-| Responsive layout | ✓ | |
-| Stripe payments | ✓ | |
-| Multi-vendor breakdown | ✓ | |
-| Payment settlements + CSV | ✓ | |
-| Enhanced product search | ✓ | |
-| Security & GDPR | ✓ | |
-| Admin metrics dashboard | ✓ | |
-| Automated tests | ✓ | |
 
 
 
@@ -277,21 +250,21 @@ python manage.py test marketplace
 
 ## Sprint 3 Target Features
 
-| ID | Task Title | Description / Acceptance Criteria | Test Cases | Priority | Assignee | Estimate | Status |
-|----|------------|-----------------------------------|------------|----------|----------|----------|--------|
-| S3-001 | Stripe payment integration | Integrate Stripe (test mode) for checkout. Customer enters card details via Stripe Elements. On success, PaymentIntent recorded against Order. Order status set to Paid. Failed payments surface a clear error message. | TC-007, TC-008 | Critical | Eleftherios | 6h | To Do |
-| S3-002 | Multi-vendor order split & payment distribution | When a cart contains products from multiple producers, checkout creates one Order and separate per-producer sub-totals. 5% commission deducted; 95% allocated to each producer. Order confirmation shows full breakdown per producer. | TC-008 | Critical | Eleftherios | 5h | To Do |
-| S3-003 | Producer weekly payment settlement view | Producers can view a Payments page listing completed weekly settlements: gross order value, 5% commission deducted, net payout, individual order breakdown. Reports downloadable as CSV. Running tax-year total shown. | TC-012 | Critical | Eleftherios | 5h | To Do |
-| S3-004 | Product search functionality | Search bar on product list page queries product name, description, and producer name (case-insensitive, partial matches). Empty results show a friendly message. Search combines with existing category and organic filters. | TC-005 | High | Gia Ngo | 3h | Done |
-| S3-005 | Organic certification filter | Filter toggle on product list to show only Certified Organic products. Organic badge displayed on product cards and detail pages. Filter combines with category filter. Producers set certification status in the product form. | TC-014 | High | Gia Ngo | 2h | To Do |
-| S3-006 | Seasonal availability management | Producers can set seasonal date ranges and availability status (In Season / Out of Season / Coming Soon) on each product. Out-of-season products are hidden from the customer-facing catalogue. In-season badge shown on product cards. | TC-016 | High | Gia Ngo | 3h | To Do |
-| S3-007 | Producer stock / inventory update | Producers can update stock quantity and availability status for existing products without a full product edit. Stock changes take effect immediately. Products at zero stock show 'Out of Stock' to customers and cannot be added to cart. | TC-011 | High | Gia Ngo | 3h | To Do |
-| S3-008 | Order history with reorder | Customer order history page (sorted most-recent-first) shows order number, date, delivery date, producer names, status, and total. Clicking an order shows full itemised detail. 'Reorder' button adds items to cart, flagging any unavailable products. | TC-020 | High | Gia Ngo | 4h | To Do |
-| S3-009 | Food miles display | Calculate distance (straight-line, postcode-to-postcode) between customer postcode and producer farm postcode. Display food miles on product detail page and product cards. Cart page shows cumulative food miles for all items in the order. | TC-013 | Medium | Eleftherios | 4h | To Do |
-| S3-010 | Community group & restaurant account types | Registration supports Community Group and Restaurant roles (extending CustomUser). Community group accounts can submit bulk quantity orders with special delivery instructions. Restaurant accounts can set up a recurring weekly order template. | TC-017, TC-018 | Medium | Eleftherios | 5h | To Do |
-| S3-011 | Security hardening & GDPR | CSRF protection on all forms. Rate-limiting on login (lockout after 5 failed attempts). Passwords min 8 chars, enforced by validator. Payment info masked in order history. Users can delete their account and personal data (GDPR right to erasure). | TC-022 | Critical | Gia Ngo | 4h | To Do |
-| S3-012 | Admin dashboard — marketplace metrics | Django admin extended with summary view: total registered producers, customers, products, and orders. Commission revenue to date displayed. All models accessible with search/filter in admin. Superuser-only. | TC-025 | Medium | Eleftherios | 3h | To Do |
-| S3-013 | End-to-end testing & bug fixes | Run through all 25 test cases in the Dockerised environment. Log any failures as GitHub Issues, fix before final review. Ensure docker-compose up produces a clean, error-free boot. Confirm all migrations are applied. | All TCs | Critical | Whole team | 6h | To Do |
-| S3-014 | README & submission prep | Update README with complete setup instructions, environment variable reference, test account credentials, and URL map. Ensure GitHub repo is public. Tag final release commit. Complete and sign Contributions Matrix. | — | High | Whole team | 2h | To Do |
-| S3-015 | Surplus produce discounts | Producers can mark a product as discounted and set a reduced sale price. Discounted products are visually flagged on product list cards and the detail page. Discount applies to products approaching their best-before date or with high stock. | TC-019 | Medium | Eleftherios | 4h | To Do |
-| S3-016 | Low stock notifications | When a product's stock falls below a configurable threshold (default: 5 units), the system sends an email alert to the producer. Alert also shown as a banner in the producer dashboard until stock is updated. | TC-023 | Medium | Gia Ngo | 3h | To Do |
+| ID | Task Title | Description / Acceptance Criteria | Test Cases | Priority | Assignee | Est. | Status |
+|----|------------|-----------------------------------|------------|----------|----------|------|--------|
+| S3-001 | Stripe payment integration | Integrate Stripe (test mode) for checkout. Customer enters card details via Stripe Elements. PaymentIntent recorded against Order. Order status set to Paid. Failed payments show clear error. | TC-007, TC-008 | Critical | Eleftherios | 6h | Done |
+| S3-002 | Multi-vendor order split & payment distribution | Checkout groups items by producer with separate subtotals. 5% commission deducted. Order confirmation shows full per-producer breakdown. Each producer notified for their items only. | TC-008 | Critical | Eleftherios | 5h | Done |
+| S3-003 | Producer weekly payment settlement view | Producers view a Payments page showing weekly settlements by ISO week: gross order value, 5% commission, net payout (95%), and individual order line breakdown. Reports downloadable as CSV. Running UK tax-year total shown. | TC-012 | Critical | Eleftherios | 5h | Done |
+| S3-004 | Product search functionality | Search bar queries product name, description, and producer business name (case-insensitive, partial match). Empty results show friendly message. Search combines with category and organic filters. | TC-005 | High | Gia Ngo | 3h | Done |
+| S3-005 | Organic certification filter | Filter toggle shows only certified organic products. Organic badge displayed on product cards and detail pages. Combines with category and search filters. | TC-014 | High | Gia Ngo | 2h | Done |
+| S3-006 | Seasonal availability management | Producers set seasonal dates and availability status (In Season / Out of Season / Coming Soon). Out-of-season products hidden from customer catalogue. In-season badge shown on product cards. | TC-016 | High | Gia Ngo | 3h | Done |
+| S3-007 | Producer stock / inventory update | Producers update stock quantity from the dashboard without a full product edit. Stock changes take immediate effect. Zero-stock products show Out of Stock to customers and cannot be added to cart. | TC-011 | High | Gia Ngo | 3h | Done |
+| S3-008 | Order history with reorder | Customer order history sorted most-recent-first shows order number, date, delivery date, producer names, status, and total. Reorder button adds items to cart, flagging unavailable products. | TC-021 | High | Gia Ngo | 4h | Done |
+| S3-009 | Food miles display | Calculate straight-line distance between customer postcode and producer farm postcode using Haversine formula. Display food miles on product detail page. Cart page shows cumulative food miles for all items. | TC-013 | Medium | Eleftherios | 4h | Done |
+| S3-010 | Community group & restaurant account types | Registration supports Community Group and Restaurant roles. Restaurant accounts can set up a recurring weekly order template — add products, manage the template, and add all items to cart in one click. | TC-017, TC-018 | Medium | Gia Ngo | 5h | Done |
+| S3-011 | Security hardening & GDPR | CSRF protection on all forms. Login rate-limiting: lockout after 5 failed attempts, 15-minute cooldown via Django cache. Password minimum 8 characters enforced by validator. Users can delete their account and all personal data (GDPR right to erasure) via a confirmation modal. | TC-022 | Critical | Eleftherios | 4h | Done |
+| S3-012 | Admin dashboard — marketplace metrics | Custom view at /admin/marketplace/metrics/ showing: total registered producers, customers, active products, total orders, paid/confirmed/delivered order counts, commission revenue to date, gross revenue, and orders by status. Superuser-only access. | TC-025 | Medium | Eleftherios | 3h | Done |
+| S3-013 | End-to-end testing & bug fixes | 40+ automated Django test cases written covering authentication, RBAC, products & search, cart & stock, delivery validation, orders, reviews, GDPR deletion, and admin access. Six production bugs identified and fixed across reorder view, food miles, ProductForm validation, and cart commission display. | All TCs | Critical | Eleftherios | 6h | Done |
+| S3-014 | README & submission prep | README updated with complete Docker and local setup instructions, environment variable reference (including Stripe keys), test account guidance, Stripe test card details, full URL map, sprint summary tables, automated test instructions, and contributions matrix. | — | High | Eleftherios | 2h | Done |
+| S3-015 | Surplus produce discounts | Producers mark a product as discounted and set a reduced sale price. Sale price validated to be lower than original. Discounted products show sale price on product cards and detail pages. Discount price applied at cart add time and carries through to Stripe payment amount. | TC-019 | Medium | Gia Ngo | 4h | Done |
+| S3-016 | Low stock notifications | When a product's stock falls below a configurable threshold (default: 5 units, set per product), an email alert is sent to the producer. Alert banner also shown in the producer dashboard until stock is replenished. | TC-023 | Medium | Eleftherios | 3h | Done |

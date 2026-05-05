@@ -7,6 +7,7 @@ from django.urls import path
 from .models import CustomUser, ProducerProfile, Category, Product, Order, OrderItem, Review
 
 
+# extending the built-in UserAdmin so the role field shows up in the admin panel
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):
     fieldsets = list(UserAdmin.fieldsets) + [('Role', {'fields': ('role',)})]
@@ -21,6 +22,7 @@ class ProducerProfileAdmin(admin.ModelAdmin):
     search_fields = ['business_name', 'user__username', 'postcode']
 
 
+# prepopulated_fields automatically fills in the slug from the name
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ['name', 'slug']
@@ -35,9 +37,10 @@ class ProductAdmin(admin.ModelAdmin):
     date_hierarchy = 'created_at'
 
 
+# inline shows order items directly inside the order page in admin
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
-    extra = 0
+    extra = 0  # dont show empty extra rows
     readonly_fields = ['product', 'quantity', 'unit_price']
 
 
@@ -65,16 +68,20 @@ class ReviewAdmin(admin.ModelAdmin):
 
 
 # ── Marketplace Metrics — superuser-only custom admin view ──
+# this is a custom page we added to the admin for S3-012
+# it shows overall platform stats like total orders, commission earned etc
 
 def marketplace_metrics_view(request):
     context = {
-        **admin.site.each_context(request),
+        **admin.site.each_context(request),  # gives us the admin nav and styling
         'title': 'Marketplace Metrics',
         'customer_count': CustomUser.objects.filter(role='customer').count(),
         'producer_count': CustomUser.objects.filter(role='producer').count(),
         'product_count': Product.objects.filter(is_active=True).count(),
         'order_count': Order.objects.count(),
+        # only count orders that have actually been paid
         'paid_order_count': Order.objects.filter(status__in=['paid', 'confirmed', 'delivered']).count(),
+        # aggregate sums up all the commission values into one total
         'commission_total': Order.objects.filter(
             status__in=['paid', 'confirmed', 'delivered']
         ).aggregate(total=Sum('commission_amount'))['total'] or 0,
@@ -82,6 +89,7 @@ def marketplace_metrics_view(request):
             status__in=['paid', 'confirmed', 'delivered']
         ).aggregate(total=Sum('total_price'))['total'] or 0,
         'review_count': Review.objects.count(),
+        # builds a dict like {'Pending': 3, 'Paid': 12, ...} for the status breakdown
         'orders_by_status': {
             label: Order.objects.filter(status=value).count()
             for value, label in Order.STATUS_CHOICES
@@ -90,7 +98,8 @@ def marketplace_metrics_view(request):
     return TemplateResponse(request, 'admin/marketplace_metrics.html', context)
 
 
-# Patch AdminSite to inject the custom URL
+# we patch the admin site's get_urls to inject our custom metrics url
+# found this approach in the django docs - cleaner than overriding AdminSite
 _original_get_urls = admin.AdminSite.get_urls
 
 

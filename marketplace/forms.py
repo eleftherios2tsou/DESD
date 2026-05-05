@@ -7,6 +7,8 @@ from datetime import date, timedelta
 from .models import Review
 
 
+# basic registration form for customers
+# extends UserCreationForm which already handles username and password fields
 class RegistrationForm(UserCreationForm):
     email = forms.EmailField(required=True)
 
@@ -15,6 +17,7 @@ class RegistrationForm(UserCreationForm):
         fields = ['username', 'email', 'password1', 'password2']
 
     def clean_email(self):
+        # make sure no two accounts share the same email
         email = self.cleaned_data.get('email')
         if CustomUser.objects.filter(email=email).exists():
             raise forms.ValidationError('An account with this email already exists.')
@@ -22,12 +25,13 @@ class RegistrationForm(UserCreationForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.role = 'customer'
+        user.role = 'customer'  # always set to customer for this form
         if commit:
             user.save()
         return user
 
 
+# producer registration needs extra fields for their business info
 class ProducerRegistrationForm(UserCreationForm):
     email = forms.EmailField(required=True)
     business_name = forms.CharField(max_length=200, help_text='Your farm or business name')
@@ -49,6 +53,7 @@ class ProducerRegistrationForm(UserCreationForm):
             raise forms.ValidationError('An account with this email already exists.')
         return email
 
+# form for community group registration (S3-010)
 class CommunityGroupRegistrationForm(UserCreationForm):
     email = forms.EmailField(required=True)
     organisation_name = forms.CharField(max_length=200, help_text='Your community group or organisation name')
@@ -61,16 +66,19 @@ class CommunityGroupRegistrationForm(UserCreationForm):
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
+        # exclude current user when checking - needed for the edit case
         if CustomUser.objects.filter(email=email).exclude(pk = self.instance.pk).exists():
             raise forms.ValidationError('An account with this email already exists.')
         return email
+
     def save(self, commit = True) -> Any:
         user = super().save(commit=False)
         user.role = 'community_group'
         if commit:
             user.save()
         return user
-    
+
+# form for restaurant registration (S3-010)
 class RestaurantRegistrationForm(UserCreationForm):
     email = forms.EmailField(required=True)
     restaurant_name = forms.CharField(max_length=200, help_text='Your restaurant name')
@@ -85,6 +93,7 @@ class RestaurantRegistrationForm(UserCreationForm):
         email = self.cleaned_data.get('email')
         if CustomUser.objects.filter(email=email).exclude(pk = self.instance.pk).exists():
             raise forms.ValidationError('An account with this email already exists.')
+
     def save(self, commit = True):
         user = super().save(commit=False)
         user.role = 'restaurant'
@@ -92,6 +101,7 @@ class RestaurantRegistrationForm(UserCreationForm):
             user.save()
         return user
 
+# the main form producers use to create and edit products
 class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
@@ -102,6 +112,7 @@ class ProductForm(forms.ModelForm):
             'season_status', 'season_start', 'season_end',
             'lead_time_hours', 'low_stock_threshold', 'is_active', 'is_discounted', 'sale_price', 'image',
         ]
+        # using DateInput with type=date gives us the browser date picker
         widgets = {
             'harvest_date': forms.DateInput(attrs={'type': 'date'}),
             'best_before': forms.DateInput(attrs={'type': 'date'}),
@@ -117,6 +128,7 @@ class ProductForm(forms.ModelForm):
         sale_price = cleaned_data.get('sale_price')
         price = cleaned_data.get('price')
 
+        # if marked as discounted, the sale price must be set and must be lower than the original
         if is_discounted:
             if not sale_price:
                 self.add_error('sale_price', 'Please specify the sale price for this discounted product.')
@@ -126,6 +138,7 @@ class ProductForm(forms.ModelForm):
         return cleaned_data
 
 
+# form for users to change their email and password from the account settings page
 class AccountSettingsForm(forms.ModelForm):
     new_password1 = forms.CharField(
         label='New password',
@@ -145,6 +158,7 @@ class AccountSettingsForm(forms.ModelForm):
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
+        # exclude self so producers can re-save with their existing email
         if CustomUser.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
             raise forms.ValidationError('An account with this email already exists.')
         return email
@@ -153,6 +167,7 @@ class AccountSettingsForm(forms.ModelForm):
         cleaned_data = super().clean()
         p1 = cleaned_data.get('new_password1')
         p2 = cleaned_data.get('new_password2')
+        # only validate passwords if the user actually typed something in
         if p1 or p2:
             if p1 != p2:
                 raise forms.ValidationError('The two password fields did not match.')
@@ -162,12 +177,13 @@ class AccountSettingsForm(forms.ModelForm):
         user = super().save(commit=False)
         password = self.cleaned_data.get('new_password1')
         if password:
-            user.set_password(password)
+            user.set_password(password)  # properly hashes the password
         if commit:
             user.save()
         return user
 
 
+# separate form for producers to update their business profile info
 class ProducerProfileForm(forms.ModelForm):
     class Meta:
         model = ProducerProfile
@@ -178,6 +194,7 @@ class ProducerProfileForm(forms.ModelForm):
         }
 
 
+# checkout form - collects delivery details before we create the stripe payment
 class CheckoutForm(forms.Form):
     full_name = forms.CharField(max_length=200)
     email = forms.EmailField()
@@ -191,11 +208,13 @@ class CheckoutForm(forms.Form):
 
     def clean_delivery_date(self):
         delivery_date = self.cleaned_data.get('delivery_date')
+        # enforce the 48 hour minimum lead time from the spec
         min_date = date.today() + timedelta(hours=48)
         if delivery_date < min_date:
             raise forms.ValidationError('Delivery date must be at least 48 hours from now.')
         return delivery_date
 
+# simple review form - customers rate 1-5 stars and leave a comment
 class ReviewForm(forms.ModelForm):
     rating = forms.ChoiceField(
         choices=[(i, f'{i} ★') for i in range(1, 6)],
@@ -208,4 +227,3 @@ class ReviewForm(forms.ModelForm):
         widgets = {
             'comment': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Share your experience...'})
         }
-    

@@ -2,7 +2,8 @@
 import os
 import sys
 
-
+# this is the standard django management script - used to run commands like
+# python manage.py migrate, runserver, createsuperuser etc
 def main():
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
     try:

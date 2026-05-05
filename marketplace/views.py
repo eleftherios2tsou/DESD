@@ -18,13 +18,15 @@ from .models import ProducerProfile, Product, Category, Order, OrderItem, Review
 from .decorators import producer_required, customer_required, restaurant_required
 from.utils import calculate_food_distance
 
+# helper function to email the producer when stock drops below their threshold (S3-016)
+# called after every checkout so it triggers automatically
 def _send_low_stock_alert(product):
     """Email the producer when a product's stock drops below its threshold."""
     if product.stock >= product.low_stock_threshold:
-        return
+        return  # stock is fine, nothing to do
     producer = product.producer
     if not producer.user.email:
-        return
+        return  # cant send email if producer hasnt set one
     send_mail(
         subject=f'Low Stock Alert: {product.name}',
         message=(
@@ -36,18 +38,19 @@ def _send_low_stock_alert(product):
         ),
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[producer.user.email],
-        fail_silently=True,
+        fail_silently=True,  # dont crash the checkout if email fails
     )
 
 
 def home(request):
+    # show the 6 most recently added active products on the homepage (S2-010)
     featured_products = Product.objects.filter(is_active=True).order_by('-created_at')[:6]
     return render(request, 'marketplace/home.html',{'featured_products': featured_products})
 
 
 def register(request):
     if request.user.is_authenticated:
-        return redirect('home')
+        return redirect('home')  # already logged in, dont show registration
     if request.method == 'POST':
         form = RegistrationForm(request.POST)
         if form.is_valid():
@@ -68,6 +71,7 @@ def register_producer(request):
             user = form.save(commit=False)
             user.role = 'producer'
             user.save()
+            # create the producer profile at the same time as the user account
             ProducerProfile.objects.create(
                 user=user,
                 business_name=form.cleaned_data['business_name'],
@@ -117,18 +121,22 @@ def login_view(request):
     if request.method == 'POST':
         from django.core.cache import cache
         username = request.POST.get('username', '').strip()
+        # use the cache to track failed login attempts per username (S3-011)
         cache_key = f'login_attempts_{username}'
         attempts = cache.get(cache_key, 0)
 
         if attempts >= 5:
+            # lock the account for 15 minutes after 5 failed attempts
             lockout_msg = 'Account temporarily locked after 5 failed attempts. Please try again in 15 minutes.'
             form = AuthenticationForm()
         else:
+            # AuthenticationForm handles the actual password check
             form = AuthenticationForm(request, data=request.POST)
             if form.is_valid():
-                cache.delete(cache_key)
+                cache.delete(cache_key)  # reset the counter on success
                 user = form.get_user()
                 auth_login(request, user)
+                # producers go to their dashboard, everyone else goes home
                 if user.role == 'producer':
                     return redirect('dashboard')
                 return redirect('home')
@@ -145,26 +153,27 @@ def logout_view(request):
     return redirect('home')
 
 
-
 @producer_required
 def producer_dashboard(request):
     profile, created = ProducerProfile.objects.get_or_create(user=request.user)
     products = Product.objects.filter(producer=profile).order_by('-created_at')
+    # F() lets us compare two fields on the same model in a query
     low_stock = products.filter(is_active=True, stock__lt=F('low_stock_threshold'))
     return render(request, 'marketplace/dashboard.html', {
         'products': products,
         'profile': profile,
-        'low_stock_products': low_stock,
+        'low_stock_products': low_stock,  # shown as a warning banner in the dashboard
     })
 
 
 @producer_required
 def product_create(request):
     if request.method == 'POST':
+        # request.FILES is needed for image uploads
         form = ProductForm(request.POST, request.FILES)
         if form.is_valid():
             product = form.save(commit=False)
-            product.producer = request.user.producer_profile
+            product.producer = request.user.producer_profile  # tie product to logged in producer
             product.save()
             messages.success(request, f'Product "{product.name}" created successfully.')
             return redirect('dashboard')
@@ -175,6 +184,7 @@ def product_create(request):
 
 @producer_required
 def product_edit(request, pk):
+    # get_object_or_404 also checks the producer matches so they cant edit someone elses product
     product = get_object_or_404(Product, pk=pk, producer=request.user.producer_profile)
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES, instance=product)
@@ -196,8 +206,10 @@ def product_delete(request, pk):
         messages.success(request, f'Product "{name}" deleted.')
         return redirect('dashboard')
     return render(request, 'marketplace/product_confirm_delete.html', {'product': product})
+
 @producer_required
 def update_stock(request, pk):
+    # quick stock update from dashboard without opening the full product edit form (S3-007)
     product = get_object_or_404(Product, pk=pk, producer=request.user.producer_profile)
     if request.method == 'POST':
         try:
@@ -210,20 +222,25 @@ def update_stock(request, pk):
         except ValueError:
             messages.error(request, 'Please enter a valid non-negative integer for stock.')
     return redirect('dashboard')
+
 def producer_profile(request, pk):
+    # public profile page showing the producer's business info and all their active products
     profile = get_object_or_404(ProducerProfile, pk=pk)
     products = Product.objects.filter(producer=profile, is_active=True).order_by('-created_at')
     return render(request, 'marketplace/producer_profile.html', {'profile': profile, 'products': products})
 
 
 def product_list(request):
+    # exclude out of season products from the catalogue
     products = Product.objects.filter(is_active=True).exclude(season_status = 'out_of_season').select_related('producer', 'category')
 
+    # read filter values from the query string (?search=apple&category=veg&organic=1)
     search = request.GET.get('search', '')
     category = request.GET.get('category', '')
     organic = request.GET.get('organic', '')
 
     if search:
+        # Q objects let us do OR queries - searches name, description, and producer name
         products = products.filter(
             Q(name__icontains=search) |
             Q(description__icontains=search) |
@@ -245,8 +262,10 @@ def product_list(request):
 def product_detail(request, pk):
     product = get_object_or_404(Product, pk=pk, is_active=True)
     reviews = product.reviews.all().order_by('-created_at')
-    avg_rating = reviews.aggregate(Avg('rating'))['rating__avg']    
+    # aggregate calculates the average rating across all reviews
+    avg_rating = reviews.aggregate(Avg('rating'))['rating__avg']
 
+    # calculate food miles if we have the customer's postcode from a previous checkout
     food_miles = None
     customer_postcode = request.session.get('customer_postcode') if request.user.is_authenticated else None
     if customer_postcode:
@@ -262,10 +281,13 @@ def product_detail(request, pk):
 
 @producer_required
 def producer_orders_management(request):
+    # only show orders that contain this producer's products
     orders = Order.objects.filter(items__product__producer=request.user.producer_profile).distinct().order_by('-created_at')
     return render(request, 'marketplace/producer_orders.html', {'orders': orders})
+
 @producer_required
 def update_order_status(request, pk):
+    # also check the order contains this producer's products before allowing the update
     order = get_object_or_404(Order, pk=pk, items__product__producer=request.user.producer_profile)
     if request.method == 'POST':
         new_status = request.POST.get('status')
@@ -282,7 +304,7 @@ def account_settings(request):
     if not request.user.is_authenticated:
         return redirect('login')
 
-    producer_form = None
+    producer_form = None  # only shown for producer accounts
 
     if request.method == 'POST':
         account_form = AccountSettingsForm(request.POST, instance=request.user)
@@ -296,6 +318,7 @@ def account_settings(request):
             user = account_form.save()
             if producer_form:
                 producer_form.save()
+            # update_session_auth_hash keeps the user logged in after a password change
             update_session_auth_hash(request, user)
             messages.success(request, 'Account settings updated successfully.')
             return redirect('account_settings')
@@ -315,12 +338,15 @@ def cart_add(request, pk):
     if request.method != 'POST':
         return redirect('product_list')
     product = get_object_or_404(Product, pk=pk, is_active=True)
+    # cart is stored in the session as a dict keyed by product id
     cart = request.session.get('cart', {})
     quantity = int(request.POST.get('quantity', 1))
+    # use sale price if product is discounted, otherwise use the regular price
     effective_price = float(product.sale_price) if product.is_discounted and product.sale_price else float(product.price)
 
     product_id = str(pk)
     current_in_cart = cart[product_id]['quantity'] if product_id in cart else 0
+    # check we have enough stock including what's already in the cart
     if product.stock < current_in_cart + quantity:
         messages.error(request, f'Not enough stock for "{product.name}". Only {product.stock} available.')
         return redirect('product_detail', pk=pk)
@@ -337,6 +363,7 @@ def cart_add(request, pk):
 
     request.session['cart'] = cart
     return redirect('cart_view')
+
 @customer_required
 def cart_remove(request, pk):
     if request.method != 'POST':
@@ -347,11 +374,13 @@ def cart_remove(request, pk):
         del cart[product_id]
         request.session['cart'] = cart
     return redirect('cart_view')
+
 @customer_required
 def cart_view(request):
     cart = request.session.get('cart', {})
     total_food_distance = 0
-    customer_postcode = request.session.get('customer_postcode') 
+    # if we know the customer's postcode, calculate cumulative food miles for the whole cart
+    customer_postcode = request.session.get('customer_postcode')
     if customer_postcode:
         for pid, item in cart.items():
             try:
@@ -360,13 +389,14 @@ def cart_view(request):
                 if distance :
                     total_food_distance += distance
             except Product.DoesNotExist:
-                continue
+                continue  # product might have been deleted since it was added to cart
     total = sum(float(item['price']) * item['quantity'] for item in cart.values())
     return render(request, 'marketplace/cart.html', {
         'cart': cart,
         'total': total,
         'total_food_miles': round(total_food_distance, 1) if total_food_distance else None,
     })
+
 @customer_required
 def cart_update(request, pk):
     if request.method != 'POST':
@@ -378,14 +408,15 @@ def cart_update(request, pk):
         if quantity > 0:
             cart[product_id]['quantity'] = quantity
         else:
-            del cart[product_id]
+            del cart[product_id]  # remove the item if quantity set to 0
     request.session['cart'] = cart
     return redirect('cart_view')
+
 @customer_required
 def checkout(request):
     cart = request.session.get('cart', {})
     if not cart:
-        return redirect('cart_view')
+        return redirect('cart_view')  # nothing to checkout
 
     if request.method == 'POST':
         form = CheckoutForm(request.POST)
@@ -410,10 +441,11 @@ def checkout(request):
                 'postcode': form.cleaned_data['postcode'],
                 'special_delivery_instructions': form.cleaned_data.get('special_delivery_instructions', '')
             }
+            # save postcode to session so food miles work on product pages after checkout
             request.session['customer_postcode'] = form.cleaned_data['postcode']
             request.session['cart'] = cart  # ensure subtotals are persisted
 
-            # Create Stripe PaymentIntent
+            # Create Stripe PaymentIntent - amount is in pence so multiply by 100
             stripe.api_key = settings.STRIPE_SECRET_KEY
             try:
                 intent = stripe.PaymentIntent.create(
@@ -433,7 +465,7 @@ def checkout(request):
     for item in cart.values():
         item['subtotal'] = float(item['price']) * item['quantity']
     total = sum(item['subtotal'] for item in cart.values())
-    commission = total * 0.05
+    commission = total * 0.05  # 5% platform fee shown at checkout
 
     # Group items by producer for S3-002 breakdown
     cart_by_producer = {}
@@ -455,9 +487,10 @@ def checkout(request):
 
 @customer_required
 def payment(request):
+    # stripe sends the client_secret to the browser so it can confirm the payment
     client_secret = request.session.get('stripe_client_secret')
     if not client_secret or not request.session.get('pending_checkout'):
-        return redirect('checkout')
+        return redirect('checkout')  # something went wrong, start over
 
     return render(request, 'marketplace/payment.html', {
         'client_secret': client_secret,
@@ -467,6 +500,7 @@ def payment(request):
 
 @customer_required
 def checkout_complete(request):
+    # stripe redirects here after payment with payment_intent and redirect_status in the url
     payment_intent_id = request.GET.get('payment_intent')
     redirect_status = request.GET.get('redirect_status')
 
@@ -475,11 +509,12 @@ def checkout_complete(request):
         return redirect('cart_view')
 
     # Idempotency: if this PaymentIntent already created an order, show it
+    # prevents duplicate orders if the user refreshes the confirmation page
     existing = Order.objects.filter(payment_intent_id=payment_intent_id).first()
     if existing:
         return redirect('order_confirmation', pk=existing.pk)
 
-    # Verify with Stripe
+    # Verify with Stripe that the payment actually went through
     stripe.api_key = settings.STRIPE_SECRET_KEY
     try:
         intent = stripe.PaymentIntent.retrieve(payment_intent_id)
@@ -502,6 +537,7 @@ def checkout_complete(request):
     total = sum(item['subtotal'] for item in cart.values())
     commission = total * 0.05
 
+    # create the order in the database now that payment is confirmed
     order = Order.objects.create(
         customer=request.user,
         delivery_address=pending['delivery_address'],
@@ -509,9 +545,10 @@ def checkout_complete(request):
         total_price=total,
         commission_amount=commission,
         status='paid',
-        payment_intent_id=payment_intent_id,
+        payment_intent_id=payment_intent_id,  # store so we can do idempotency check above
     )
 
+    # create order items and decrement stock
     for product_id, item in cart.items():
         product = get_object_or_404(Product, pk=int(product_id))
         OrderItem.objects.create(
@@ -522,9 +559,9 @@ def checkout_complete(request):
         )
         product.stock -= item['quantity']
         product.save()
-        _send_low_stock_alert(product)
+        _send_low_stock_alert(product)  # email producer if stock is now low
 
-    # Clear session
+    # Clear session data now that the order is saved
     request.session.pop('cart', None)
     request.session.pop('pending_checkout', None)
     request.session.pop('stripe_client_secret', None)
@@ -552,7 +589,7 @@ def checkout_complete(request):
             fail_silently=True,
         )
 
-    # Per-producer notification emails
+    # Per-producer notification emails - each producer only gets notified about their own items
     producer_items = defaultdict(lambda: {'producer': None, 'lines': []})
     for product_id, item in cart.items():
         product = Product.objects.filter(pk=int(product_id)).select_related('producer').first()
@@ -588,7 +625,7 @@ def order_confirmation(request, pk):
         return redirect('login')
     order = get_object_or_404(Order, pk=pk, customer=request.user)
 
-    # Per-producer breakdown for S3-002
+    # group items by producer so we can show a per-producer breakdown (S3-002)
     producer_breakdown = {}
     for item in order.items.select_related('product__producer').all():
         if item.product:
@@ -605,23 +642,27 @@ def order_confirmation(request, pk):
 
 @customer_required
 def order_history(request):
+    # show most recent orders first
     orders = Order.objects.filter(customer=request.user).order_by('-created_at')
-    
+
     return render(request, 'marketplace/order_history.html', {'orders': orders})
 
 @customer_required
-def reorder(request,pk):
+def reorder(request, pk):
+    # adds all items from a previous order back into the cart (S3-008)
     order = get_object_or_404(Order, pk=pk, customer=request.user)
     cart = request.session.get('cart', {})
     unavailable = []
 
     for item in order.items.all():
         product = item.product
+        # skip products that no longer exist or are out of stock
         if product is None or not product.is_active or product.stock == 0:
             unavailable.append(item.product.name if product else 'Deleted product')
             continue
 
         pid = str(product.id)
+        # dont add more than what's in stock
         qty = min(item.quantity, product.stock)
 
         effective_price = (
@@ -640,7 +681,7 @@ def reorder(request,pk):
                 'subtotal': effective_price * qty,
             }
     request.session['cart'] = cart
-    request.session.modified = True
+    request.session.modified = True  # tell django the session has changed
 
     if unavailable:
         messages.warning(request, f'Some items were unavailable and not added to cart: {", ".join(unavailable)}')
@@ -650,14 +691,16 @@ def reorder(request,pk):
 
 @producer_required
 def producer_payments(request):
+    # payment settlements page showing weekly earnings (S3-003)
     profile = request.user.producer_profile
 
+    # only count delivered orders - pending/paid orders arent settled yet
     order_items = OrderItem.objects.filter(
         product__producer=profile,
         order__status='delivered',
     ).select_related('order', 'product').order_by('-order__delivery_date')
 
-    # Group by ISO week
+    # group order items by ISO week number so we can show weekly summaries
     weeks = defaultdict(list)
     for item in order_items:
         iso = item.order.delivery_date.isocalendar()
@@ -679,13 +722,14 @@ def producer_payments(request):
             'net': net,
         })
 
-    # UK tax year: 6 April – 5 April
+    # UK tax year runs 6 April to 5 April the following year
     today = date.today()
     if today.month < 4 or (today.month == 4 and today.day < 6):
         tax_year_start = date(today.year - 1, 4, 6)
     else:
         tax_year_start = date(today.year, 4, 6)
 
+    # filter to only items in the current tax year for the running total
     ty_items = [i for i in order_items if i.order.delivery_date >= tax_year_start]
     tax_year_gross = sum(i.unit_price * i.quantity for i in ty_items)
 
@@ -699,6 +743,7 @@ def producer_payments(request):
 
 @producer_required
 def producer_payments_export(request):
+    # download the payments data as a CSV file
     profile = request.user.producer_profile
 
     order_items = OrderItem.objects.filter(
@@ -706,6 +751,7 @@ def producer_payments_export(request):
         order__status='delivered',
     ).select_related('order', 'product').order_by('-order__delivery_date')
 
+    # set content-disposition to attachment so the browser downloads it instead of showing it
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = (
         f'attachment; filename="payments_{profile.business_name.replace(" ", "_")}.csv"'
@@ -728,11 +774,13 @@ def producer_payments_export(request):
         ])
 
     return response
+
 @customer_required
-def submit_review(request,product_pk):
+def submit_review(request, product_pk):
     product = get_object_or_404(Product, pk=product_pk)
 
     # Check customer has a delivered order containing this product
+    # you shouldnt be able to review something you havent actually received
     has_delivered_order = Order.objects.filter(
         customer=request.user,
         status='delivered',
@@ -767,12 +815,13 @@ def submit_review(request,product_pk):
 
 
 def delete_account(request):
+    # GDPR right to erasure - deletes the user and all their data (S3-011)
     if not request.user.is_authenticated:
         return redirect('login')
     if request.method == 'POST':
         if request.POST.get('confirm') == 'DELETE':
             user = request.user
-            auth_logout(request)
+            auth_logout(request)  # log out before deleting so the session doesnt break
             user.delete()  # CASCADE removes orders, reviews, producer profile
             messages.success(request, 'Your account and all personal data have been permanently deleted.')
             return redirect('home')
@@ -783,6 +832,8 @@ def delete_account(request):
 
 @restaurant_required
 def weekly_order_template(request):
+    # restaurant feature - lets them save a recurring order and add it all to cart at once (S3-010)
+    # get_or_create means the template is created automatically on first visit
     template, created = WeeklyOrderTemplate.objects.get_or_create(customer = request.user)
     items = template.items.select_related('product').all()
 
@@ -793,9 +844,10 @@ def weekly_order_template(request):
             product_id = request.POST.get('product_id')
             quantity = int(request.POST.get('quantity', 1))
             product = get_object_or_404(Product, pk=product_id, is_active=True)
+            # get_or_create so we dont end up with duplicate items for the same product
             item, item_created = WeeklyOrderItem.objects.get_or_create(template=template, product=product, defaults={'quantity': quantity})
             if not item_created:
-                item.quantity = quantity
+                item.quantity = quantity  # update quantity if item already exists
                 item.save()
             messages.success(request, f'Added "{product.name}" to your weekly template.')
 
@@ -805,6 +857,7 @@ def weekly_order_template(request):
             messages.success(request, 'Item removed from your weekly template.')
 
         elif action == 'to_cart':
+            # add all template items to the session cart in one click
             cart = request.session.get('cart', {})
             for item in items:
                 product = item.product
@@ -828,7 +881,8 @@ def weekly_order_template(request):
             messages.success(request, 'Weekly template items added to cart. Please review your cart before checkout.')
             return redirect('cart_view')
         return redirect('weekly_order_template')
-    
+
+    # only show active, in-season products in the template picker
     products = Product.objects.filter(is_active=True).exclude(season_status = 'out_of_season').select_related('producer', 'category')
     return render(request, 'marketplace/weekly_order_template.html', {
         'template': template,

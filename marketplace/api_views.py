@@ -5,12 +5,14 @@ from .models import Category, Product, Order
 from .serializers import CategorySerializer, ProductSerializer, OrderSerializer, OrderCreateSerializer, OrderStatusSerializer
 
 
+# custom permission class - read is open to everyone, writes only for producers
 class IsProducerOrReadOnly(permissions.BasePermission):
     """
     Read access: anyone (including anonymous).
     Write access: only authenticated producers, and only for their own products.
     """
     def has_permission(self, request, view):
+        # SAFE_METHODS = GET, HEAD, OPTIONS - these are read-only
         if request.method in permissions.SAFE_METHODS:
             return True
         return request.user.is_authenticated and request.user.role == 'producer'
@@ -18,9 +20,11 @@ class IsProducerOrReadOnly(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
             return True
+        # make sure producer can only edit their own products
         return obj.producer == request.user.producer_profile
 
 
+# read-only viewset for categories - no one needs to create categories via the API
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     """
     List and retrieve product categories.
@@ -29,7 +33,7 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     """
     queryset = Category.objects.all().order_by('name')
     serializer_class = CategorySerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.AllowAny]  # categories are public
 
 
 class ProductViewSet(viewsets.ModelViewSet):
@@ -46,10 +50,11 @@ class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.select_related('producer', 'category').filter(is_active=True)
     serializer_class = ProductSerializer
     permission_classes = [IsProducerOrReadOnly]
+    # search and ordering come built into DRF, just need to specify which fields
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'description', 'farm_origin', 'producer__business_name']
     ordering_fields = ['price', 'created_at', 'name']
-    ordering = ['-created_at']
+    ordering = ['-created_at']  # newest first by default
 
     def get_queryset(self):
         qs = Product.objects.select_related('producer', 'category').filter(is_active=True)
@@ -66,8 +71,10 @@ class ProductViewSet(viewsets.ModelViewSet):
         return qs
 
     def perform_create(self, serializer):
+        # automatically set the producer to whoever is logged in
         serializer.save(producer=self.request.user.producer_profile)
 
+    # custom action at /api/products/my/ - returns only the logged in producer's products
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
     def my(self, request):
         """Return only the authenticated producer's products (including inactive)."""
@@ -80,6 +87,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
+# helper permissions for the order viewset
 class IsCustomer(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user.is_authenticated and request.user.role == 'customer'
@@ -99,23 +107,27 @@ class OrderViewSet(viewsets.ModelViewSet):
     """
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated]
+    # only allow these methods - no DELETE or PUT on orders
     http_method_names = ['get', 'post', 'patch', 'head', 'options']
 
     def get_queryset(self):
         user = self.request.user
+        # producers see orders that contain their products
         if user.role == 'producer':
             return Order.objects.filter(
                 items__product__producer=user.producer_profile
             ).distinct().prefetch_related('items__product').order_by('-created_at')
+        # customers only see their own orders
         return Order.objects.filter(
             customer=user
         ).prefetch_related('items__product').order_by('-created_at')
 
+    # use different serializers depending on the action
     def get_serializer_class(self):
         if self.action == 'create':
             return OrderCreateSerializer
         if self.action == 'partial_update':
-            return OrderStatusSerializer
+            return OrderStatusSerializer  # producers can only change the status field
         return OrderSerializer
 
     def get_permissions(self):
@@ -133,6 +145,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def partial_update(self, request, *args, **kwargs):
         order = self.get_object()
+        # make sure the producer actually has products in this order before letting them update it
         if not order.items.filter(product__producer=request.user.producer_profile).exists():
             return Response(
                 {'detail': 'You do not have permission to update this order.'},
